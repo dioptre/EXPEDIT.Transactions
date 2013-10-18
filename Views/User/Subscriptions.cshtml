@@ -1,0 +1,18 @@
+﻿@model EXPEDIT.Transactions.ViewModels.TransactionsViewModel
+@{
+    Style.Require("Transactions");
+    HtmlHelper.ClientValidationEnabled = true;
+    HtmlHelper.UnobtrusiveJavaScriptEnabled = true;
+    Layout.Title = T("Test").ToString();
+}
+<p>hi</p>
+@Html.AntiForgeryToken()
+@Html.TextBoxFor(f => f.TransactionsID)
+<html>
+ <body>
+   <h1>Subscription Status</h1>
+   <ul>
+     <li>@ViewData["Message"]</li>
+   </ul>
+ </body>
+</html>
