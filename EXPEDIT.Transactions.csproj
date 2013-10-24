@@ -30,7 +30,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;XODB</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
@@ -65,6 +65,7 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.ServiceModel" />
     <Reference Include="System.Transactions" />
     <Reference Include="System.Web.ApplicationServices" />
     <Reference Include="System.Web.DynamicData" />
@@ -82,6 +83,7 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="LICENSE.TXT" />
     <Content Include="Web.config" />
     <Content Include="Views\Web.config" />
     <Content Include="Scripts\Web.config" />
@@ -90,9 +92,9 @@
     <Content Include="Module.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\..\..\..\utils\src\main\EXPEDIT.Utils\EXPEDIT.Utils.csproj">
-      <Project>{72ba3616-fd5f-4120-9bfd-9e06cd08ab65}</Project>
-      <Name>EXPEDIT.Utils</Name>
+    <ProjectReference Include="..\..\..\..\..\..\..\..\eodb\src\main\XODB.Module.BusinessObjects\XODB.Module.BusinessObjects.csproj">
+      <Project>{380151d5-c92f-404a-8b89-b788f574d228}</Project>
+      <Name>XODB.Module.BusinessObjects</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Orchard\Orchard.Framework.csproj">
       <Project>{2D1D92BB-4555-4CBE-8D0E-63563D6CE4C6}</Project>
@@ -105,8 +107,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controllers\UserController.cs" />
+    <Compile Include="Helpers\ConstantsHelper.cs" />
+    <Compile Include="Helpers\GuidHelper.cs" />
     <Compile Include="Route.cs" />
+    <Compile Include="Services\ITransactionsService.cs" />
     <Compile Include="Services\Payments\BraintreeUtils.cs" />
+    <Compile Include="Services\Payments\IPayment.cs" />
+    <Compile Include="Services\TransactionsService.cs" />
+    <Compile Include="ViewModels\ProductsViewModel.cs" />
+    <Compile Include="ViewModels\OrderViewModel.cs" />
+    <Compile Include="ViewModels\ProductViewModel.cs" />
     <Compile Include="ViewModels\TransactionsViewModel.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -123,6 +133,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\User\Subscriptions.cshtml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Views\User\ConfirmPayment.cshtml" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

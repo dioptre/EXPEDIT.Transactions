@@ -4,10 +4,12 @@ using System.Web.Mvc;
 using System;
 namespace EXPEDIT.Transactions.ViewModels
 {
-    public class TransactionsViewModel
+    public class OrderViewModel
     {
-        [HiddenInput, Required, DisplayName("Transactions ID:")]
-        public Guid? TransactionsID { get; set; }
+        [HiddenInput, Required, DisplayName("Product ID:")]
+        public Guid? OrderID { get; set; }
+
+
         public SelectList TransactionType { get; set; }
 
     }
