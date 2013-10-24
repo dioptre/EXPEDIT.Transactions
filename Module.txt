@@ -9,5 +9,5 @@ Category: Business
 Features:
     EXPEDIT.Transactions: 
         Description: Transactions web module by EXPEDIT.
-		Dependencies: Orchard.Email
+		Dependencies: Orchard.Email,XODB,Orchard.Media
 		Category: Business

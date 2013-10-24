@@ -8,9 +8,21 @@ namespace EXPEDIT.Transactions.ViewModels
     {
         [HiddenInput, Required, DisplayName("Product ID:")]
         public Guid? ModelID { get; set; }
+        public Guid? CompanyID { get; set; }
+        public Guid? SupplierID { get; set; }
+        public string Title { get; set; }
+        public string Subtitle { get; set; }
+        public string Manufacturer { get; set; }
+        public string UrlInternal { get; set; }
+        public string UrlExternal { get; set; }
+        public float Rating { get; set; }
+        public string HTML { get; set; }
+        public string Thumbnail { get { return string.Format(@"{0}/Companies/{1}.jpg", MediaDirectory, CompanyID); } }
 
-
-        public SelectList TransactionType { get; set; }
+        public Guid? FreeFileDataID { get; set; }
+        public DateTime LastUpdated { get; set; }
+        public int Downloads { get; set; }
+        public string MediaDirectory { get; set; }
 
     }
 }

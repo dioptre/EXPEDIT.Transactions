@@ -24,6 +24,9 @@ using XODB.Module.BusinessObjects;
 using EXPEDIT.Utils.DAL.Models;
 #endif
 using EXPEDIT.Transactions.ViewModels;
+using EXPEDIT.Transactions.Helpers;
+using XODB.Services;
+using Orchard.Media.Services;
 
 namespace EXPEDIT.Transactions.Services {
     
@@ -33,14 +36,18 @@ namespace EXPEDIT.Transactions.Services {
         private readonly IContentManager _contentManager;
         private readonly IMessageManager _messageManager;
         private readonly IScheduledTaskManager _taskManager;
+        private readonly IUsersService _users;
+        private readonly IMediaService _media;
         public ILogger Logger { get; set; }
 
-        public TransactionsService(IContentManager contentManager, IOrchardServices orchardServices, IMessageManager messageManager, IScheduledTaskManager taskManager)
+        public TransactionsService(IContentManager contentManager, IOrchardServices orchardServices, IMessageManager messageManager, IScheduledTaskManager taskManager, IUsersService users,  IMediaService media )
         {
             _orchardServices = orchardServices;
             _contentManager = contentManager;
             _messageManager = messageManager;
             _taskManager = taskManager;
+            _media = media;
+            _users = users;
             T = NullLocalizer.Instance;
             Logger = NullLogger.Instance;
         }
@@ -72,8 +79,16 @@ namespace EXPEDIT.Transactions.Services {
 
         public IEnumerable<ProductViewModel> GetProducts()
         {
-            //SupplierModel
-            throw new NotImplementedException();
+            var supplier = _users.CompanyID;
+            var directory = _media.GetPublicUrl(@"EXPEDIT.Transactions");
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new XODBC(_users.ApplicationConnectionString, null);
+                return (from o in d.SupplierModels where o.SupplierID == supplier 
+                        join m in d.DictionaryModels on o.ModelID equals m.ModelID 
+                        where m.DeviceTypeID==ConstantsHelper.DEVICE_TYPE_SOFTWARE
+                        select new ProductViewModel { ModelID = o.ModelID, CompanyID = m.CompanyID, MediaDirectory = directory}).ToArray();
+            }
         }
 
 

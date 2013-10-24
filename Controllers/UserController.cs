@@ -2,12 +2,10 @@ using System.Web.Mvc;
 using Orchard.Localization;
 using Orchard;
 using Orchard.Themes;
-using EXPEDIT.Transactions.ViewModels;
 using System;
 using System.Linq;
-using Braintree;
-using EXPEDIT.Transactions.ViewModels;
 using EXPEDIT.Transactions.Services;
+using EXPEDIT.Transactions.ViewModels;
 
 namespace EXPEDIT.Transactions.Controllers
 {
@@ -17,19 +15,6 @@ namespace EXPEDIT.Transactions.Controllers
         public IOrchardServices Services { get; set; }
         public ITransactionsService Transactions { get; set; }     
         
-        public ActionResult Result()
-        {
-         
-            return View();
-        }
-    
-
-        public ActionResult Subscriptions()
-        {
-            return View();
-        }
-    
-
         public UserController(IOrchardServices services, ITransactionsService transactions)
         {
             Services = services;
@@ -42,13 +27,10 @@ namespace EXPEDIT.Transactions.Controllers
         [ValidateInput(false)]
         public ActionResult Index()
         {
-            return View();
+            var m = new ProductsViewModel { Products = Transactions.GetProducts() };
+            return View(m);
         }
-
-        public ActionResult Test()
-        {
-            return View();
-        }
+      
     }
 
 }

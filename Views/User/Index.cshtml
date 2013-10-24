@@ -3,7 +3,7 @@
     Style.Require("Transactions");
     HtmlHelper.ClientValidationEnabled = true;
     HtmlHelper.UnobtrusiveJavaScriptEnabled = true;
-    Layout.Title = T("Store").ToString();
+    Layout.Title = T("Products").ToString();
 }
 <p>hi</p>
 @Html.TextBoxFor(f => f.ApplicationID)
@@ -16,7 +16,7 @@
 <tbody>
     @foreach (var p in Model.Products) {
 <tr>
-<td><img src="/Media/Default/XODB.Biz/LogoCMYK.png" alt="" style="padding: 4px; line-height: 19.5px; border: 1px solid #ddd;" width="60" height="60"></td>
+<td><img src="@p.Thumbnail" alt="" style="padding: 4px; line-height: 19.5px; border: 1px solid #ddd;" width="60" height="60"></td>
 <td>
 <h2>XODB (Windows) &nbsp;<small>XODB Windows Client</small></h2>
 <p>XODB is a free tool for exploration and mining packed with features. Over 160,000 geographic locations and polygons are included. Ideally suited for data entry, the system caters for project management, asset management, document management, tenement and geology compliance. Based on the XODB Open Data Platform, it will soon include mine operations and planning extension to complete the mine lifecycle. Use it for analysis, operating equipment, reconciliation, benchmarking, reporting and compliance.&nbsp;</p>
