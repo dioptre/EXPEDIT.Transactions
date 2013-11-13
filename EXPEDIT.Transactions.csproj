@@ -54,6 +54,13 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\packages\EntityFramework.6.0.1\lib\net45\EntityFramework.dll</HintPath>
     </Reference>
+    <Reference Include="ImpromptuInterface, Version=6.1.3.0, Culture=neutral, PublicKeyToken=0b1781c923b2975b, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\lib\impromptu-interface-bin\ImpromptuInterface.dll</HintPath>
+    </Reference>
+    <Reference Include="ImpromptuInterface.MVVM">
+      <HintPath>..\..\..\..\lib\impromptu-interface-bin\ImpromptuInterface.MVVM.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -119,6 +126,7 @@
     <Compile Include="Route.cs" />
     <Compile Include="Services\ITransactionsService.cs" />
     <Compile Include="Services\Payments\BraintreeUtils.cs" />
+    <Compile Include="Services\Payments\IMerchant.cs" />
     <Compile Include="Services\Payments\IPayment.cs" />
     <Compile Include="Services\TransactionsService.cs" />
     <Compile Include="ViewModels\ProductsViewModel.cs" />

@@ -84,10 +84,34 @@ namespace EXPEDIT.Transactions.Services {
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new XODBC(_users.ApplicationConnectionString, null);
-                return (from o in d.SupplierModels where o.SupplierID == supplier 
-                        join m in d.DictionaryModels on o.ModelID equals m.ModelID 
-                        where m.DeviceTypeID==ConstantsHelper.DEVICE_TYPE_SOFTWARE
-                        select new ProductViewModel { ModelID = o.ModelID, CompanyID = m.CompanyID, MediaDirectory = directory}).ToArray();
+                return (from o in d.SupplierModels where o.SupplierID == supplier
+                        join m in d.DictionaryModels on o.ModelID equals m.ModelID
+                            where m.DeviceTypeID == ConstantsHelper.DEVICE_TYPE_SOFTWARE
+                        join u in d.DictionaryUnits on o.PriceUnitID equals u.UnitID
+                        join c in d.Companies on m.CompanyID equals c.CompanyID
+                        //join c in d.Currencies on o.CurrencyID equals c.CurrencyID //TODO
+                        join s in d.StatisticDatas on m.ModelID equals s.ReferenceID
+                        join df in d.Downloads on o.SupplierFileDataID equals df.FileDataID 
+                            into gdf
+                        from lj_df in gdf.DefaultIfEmpty()
+                        where lj_df.FilterApplicationID == null && lj_df.FilterCompanyID == null && lj_df.FilterContactID == null && lj_df.FilterServerID == null && lj_df.LicenseID == null                        
+                        && s.StatisticName == "Model Downloads"
+                        select new ProductViewModel { 
+                            ModelID = o.ModelID, 
+                            CompanyID = m.CompanyID, 
+                            MediaDirectory = directory, 
+                            PricePerUnit = o.PricePerUnit, 
+                            PriceUnitID = o.PriceUnitID,
+                            CostUnit = u.StandardUnitName,
+                            SupplierID = supplier,
+                            Title = m.StandardModelName,
+                            Subtitle = o.SupplierModelNumber,
+                            HTML = o.SupplierModelDescription,
+                            Manufacturer = c.CompanyName//,
+                            //CostText = o.PricePerUnit ?? default(decimal),
+                            //FreeDownloadID = (lj_df == null ? default(Guid?) : lj_df.DownloadID),
+                            //Downloads = s.Count ?? 0
+                        }).ToArray();
             }
         }
 

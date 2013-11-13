@@ -1,12 +1,11 @@
 ﻿@model EXPEDIT.Transactions.ViewModels.ProductsViewModel
+
 @{
     Style.Require("Transactions");
     HtmlHelper.ClientValidationEnabled = true;
     HtmlHelper.UnobtrusiveJavaScriptEnabled = true;
     Layout.Title = T("Products").ToString();
 }
-<p>hi</p>
-@Html.TextBoxFor(f => f.ApplicationID)
 
 @*@using (Html.BeginFormAntiForgeryPost(Url.Action(string.Format("{0}", ViewData["TransparentRedirectUrl"]), "User", new { area = "EXPEDIT.Transactions", Controller = "User", Action = "Index" }), FormMethod.Post, new { id = "payment-form", @class = "payment-form" }))*@
 <table class="table table-striped">
@@ -18,12 +17,12 @@
 <tr>
 <td><img src="@p.Thumbnail" alt="" style="padding: 4px; line-height: 19.5px; border: 1px solid #ddd;" width="60" height="60"></td>
 <td>
-<h2>XODB (Windows) &nbsp;<small>XODB Windows Client</small></h2>
-<p>XODB is a free tool for exploration and mining packed with features. Over 160,000 geographic locations and polygons are included. Ideally suited for data entry, the system caters for project management, asset management, document management, tenement and geology compliance. Based on the XODB Open Data Platform, it will soon include mine operations and planning extension to complete the mine lifecycle. Use it for analysis, operating equipment, reconciliation, benchmarking, reporting and compliance.&nbsp;</p>
-<p><a href="xodb.xstractgroup.com">...more information</a></p>
-<p style="text-align: right;"><button class="btn btn-info" onclick="window.location.href='http://xodb.xstractgroup.com/publish/xodb/13/setup.exe'">Free Download</button></p>
+<h2>@p.Title <small>@p.Subtitle</small></h2>
+<p>@p.HTML</p>
+<p><a href="@p.UrlInternal">...more information</a></p>
+<p style="text-align: right;">@Html.Raw(p.PricePerUnit == 0 ? string.Format("<button class=\"btn btn-info\" onclick=\"window.location.href='{0}'\">Free Download</button></p>", "/hi") : "asdasd")</p>
 <br>
-<p>Last Updated: 10/10/2013 7:54:15 PM | Author: Xstract Technologies Division | Downloads: 17864 | Website: <a href="http://xodb.org/">http://xodb.org/</a> &nbsp;| Rating: 5/5</p>
+<p>Last Updated: @p.LastUpdated | Author: @p.Manufacturer | Downloads: @p.Downloads | Website: <a href="@p.UrlExternal">@p.UrlExternal</a> &nbsp;| Rating: @p.Rating/5</p>
 </td>
 </tr>
 }
