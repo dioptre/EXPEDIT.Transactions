@@ -19,10 +19,15 @@
 <td>
 <h2>@p.Title <small>@p.Subtitle</small></h2>
 <p>@p.HTML</p>
-<p><a href="@p.UrlInternal">...more information</a></p>
-<p style="text-align: right;">@Html.Raw(p.PricePerUnit == 0 ? string.Format("<button class=\"btn btn-info\" onclick=\"window.location.href='{0}'\">Free Download</button></p>", "/hi") : "asdasd")</p>
+<p><a href="/share/go/@p.UrlInternal">...more information</a></p>
+<p style="text-align: right;">@Html.Raw(p.PricePerUnit == 0 && p.FreeDownloadID.HasValue ? 
+        string.Format("<button class=\"btn btn-info\" onclick=\"window.location.href='" + Url.Action("download",new { area="EXPEDIT.Transactions", controller="User", id=p.FreeDownloadID, @ref=p.ProductID}) + "'\">Free Download</button></p>", p.ProductID, p.FreeDownloadID) 
+    :   string.Format("<button class=\"btn btn-info\" onclick=\"window.location.href='" + Url.Action("buy",new { area="EXPEDIT.Transactions", controller="User", id=p.ProductID}) + "'\">Buy</button></p>", p.ProductID, p.FreeDownloadID)
+    )
+    
+</p>
 <br>
-<p>Last Updated: @p.LastUpdated | Author: @p.Manufacturer | Downloads: @p.Downloads | Website: <a href="@p.UrlExternal">@p.UrlExternal</a> &nbsp;| Rating: @p.Rating/5</p>
+<p>Last Updated: @p.LastUpdated | Author: <a href="/share/go/@p.UrlExternal">@p.Manufacturer</a> | Downloads: @p.Downloads | Rating: @string.Format("{0:f2}", p.Rating)/@string.Format("{0:f2}", p.RatingScale)</p>
 </td>
 </tr>
 }

@@ -80,37 +80,48 @@ namespace EXPEDIT.Transactions.Services {
         public IEnumerable<ProductViewModel> GetProducts()
         {
             var supplier = _users.CompanyID;
+            var application = _users.ApplicationID;
             var directory = _media.GetPublicUrl(@"EXPEDIT.Transactions");
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new XODBC(_users.ApplicationConnectionString, null);
-                return (from o in d.SupplierModels where o.SupplierID == supplier
-                        join m in d.DictionaryModels on o.ModelID equals m.ModelID
-                            where m.DeviceTypeID == ConstantsHelper.DEVICE_TYPE_SOFTWARE
-                        join u in d.DictionaryUnits on o.PriceUnitID equals u.UnitID
-                        join c in d.Companies on m.CompanyID equals c.CompanyID
-                        //join c in d.Currencies on o.CurrencyID equals c.CurrencyID //TODO
-                        join s in d.StatisticDatas on m.ModelID equals s.ReferenceID
-                        join df in d.Downloads on o.SupplierFileDataID equals df.FileDataID 
-                            into gdf
-                        from lj_df in gdf.DefaultIfEmpty()
-                        where lj_df.FilterApplicationID == null && lj_df.FilterCompanyID == null && lj_df.FilterContactID == null && lj_df.FilterServerID == null && lj_df.LicenseID == null                        
-                        && s.StatisticName == "Model Downloads"
+                return (from o in d.E_SP_GetProductModels(application, supplier, ConstantsHelper.DEVICE_TYPE_SOFTWARE) 
                         select new ProductViewModel { 
                             ModelID = o.ModelID, 
-                            CompanyID = m.CompanyID, 
+                            CompanyID = o.CompanyID, 
                             MediaDirectory = directory, 
                             PricePerUnit = o.PricePerUnit, 
                             PriceUnitID = o.PriceUnitID,
-                            CostUnit = u.StandardUnitName,
+                            CostUnit = o.CostUnit,
                             SupplierID = supplier,
-                            Title = m.StandardModelName,
-                            Subtitle = o.SupplierModelNumber,
-                            HTML = o.SupplierModelDescription,
-                            Manufacturer = c.CompanyName//,
-                            //CostText = o.PricePerUnit ?? default(decimal),
-                            //FreeDownloadID = (lj_df == null ? default(Guid?) : lj_df.DownloadID),
-                            //Downloads = s.Count ?? 0
+                            Title = o.Title,
+                            Subtitle = o.Subtitle,
+                            HTML = o.HTML,
+                            Manufacturer = o.Manufacturer,
+                            CurrencyID = o.CurrencyID,
+                            CurrencyPostfix = o.CurrencyPostfix,
+                            CurrencyPrefix = o.CurrencyPrefix,
+                            FreeDownloadID = o.FreeDownloadID,
+                            Downloads = o.Downloads,
+                            PaymentProviderID = o.ApplicationPaymentProviderID,
+                            PaymentProviderProductID = o.ApplicationPaymentProviderID,
+                            PaymentProviderProductName = o.PaymentProviderProductName,
+                            ProductID = o.ProductID,
+                            ProductUnitID = o.ProductUnitID,
+                            ProductUnitName = o.UnitName,
+                            ProductUnitNamePaymentProvider = o.PaymentProviderUnitName,
+                            IsRecurring = o.IsRecurring,
+                            KitUnitDefault = o.KitDefault,
+                            KitUnitMaximum = o.KitMaximum,
+                            KitUnitMinimum = o.KitMinimum,
+                            UnitDefault = o.UnitDefault,
+                            UnitMaximum = o.UnitMaximum,
+                            UnitMinimum = o.UnitMinimum,
+                            LastUpdated = DateTime.Now,
+                            Rating = o.Rating,
+                            RatingScale = o.RatingScale,
+                            UrlExternal = o.ExternalURL,
+                            UrlInternal = o.InternalURL
                         }).ToArray();
             }
         }
@@ -121,8 +132,34 @@ namespace EXPEDIT.Transactions.Services {
             throw new NotImplementedException();
         }
 
+        public void IncrementDownloadCounter(Guid productID)
+        {
+            var statName = "Downloads";
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new XODBC(_users.ApplicationConnectionString, null, false);
+                string refTable = null;
+                if (d.DictionaryModels.Any(f => f.ModelID == productID))
+                    refTable = d.GetTableName<DictionaryModel>();
+                else if (d.DictionaryParts.Any(f => f.PartID == productID))
+                    refTable = d.GetTableName<DictionaryPart>();
+                else
+                    throw new InvalidOperationException(string.Format("Can't increment unknown product {0}.", productID));
 
-        
+                var stat = (from o in d.StatisticDatas
+                            where o.ReferenceID == productID && o.TableType == refTable
+                            && o.StatisticDataName == statName
+                            select o).FirstOrDefault();
+                if (stat == null)
+                {
+                    stat = new StatisticData { StatisticDataID = Guid.NewGuid(), TableType = refTable, ReferenceID = productID, StatisticDataName = statName, Count = 0 };
+                    d.StatisticDatas.AddObject(stat);
+                }
+                stat.Count++;
+                d.SaveChanges();
+            }
+
+        }
        
     }
 }

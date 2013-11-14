@@ -27,7 +27,11 @@ namespace EXPEDIT.Transactions.Services
          IEnumerable<ProductViewModel> GetProducts();
 
          [OperationContract]
-         ProductViewModel GetProduct(Guid productID);      
+         ProductViewModel GetProduct(Guid productID);
+
+         [OperationContract]
+         void IncrementDownloadCounter(Guid productID);
+  
 
     }
 }

@@ -30,6 +30,20 @@ namespace EXPEDIT.Transactions.Controllers
             var m = new ProductsViewModel { Products = Transactions.GetProducts() };
             return View(m);
         }
+
+        public ActionResult download(string id, string @ref)
+        {
+            try
+            {
+                Transactions.IncrementDownloadCounter(new Guid(@ref));
+                Response.Redirect(System.Web.VirtualPathUtility.ToAbsolute(string.Format("~/share/download/{0}", id)));
+            }
+            catch
+            {
+               
+            }
+            return new HttpNotFoundResult();
+        }
       
     }
 

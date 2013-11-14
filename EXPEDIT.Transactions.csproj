@@ -129,6 +129,7 @@
     <Compile Include="Services\Payments\IMerchant.cs" />
     <Compile Include="Services\Payments\IPayment.cs" />
     <Compile Include="Services\TransactionsService.cs" />
+    <Compile Include="ViewModels\OrderProductViewModel.cs" />
     <Compile Include="ViewModels\ProductsViewModel.cs" />
     <Compile Include="ViewModels\OrderViewModel.cs" />
     <Compile Include="ViewModels\ProductViewModel.cs" />
