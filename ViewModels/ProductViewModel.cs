@@ -8,6 +8,7 @@ namespace EXPEDIT.Transactions.ViewModels
     {
         [HiddenInput, Required, DisplayName("Product ID:")]
         public Guid? ModelID { get; set; }
+        public Guid? SupplierModelID { get; set; }
         public Guid? CompanyID { get; set; }
         public Guid? SupplierID { get; set; }
         public string Title { get; set; }

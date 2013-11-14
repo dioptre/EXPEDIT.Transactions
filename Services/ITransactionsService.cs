@@ -24,7 +24,7 @@ namespace EXPEDIT.Transactions.Services
          void UpdateOrder(OrderViewModel order);
 
          [OperationContract]
-         IEnumerable<ProductViewModel> GetProducts();
+         IEnumerable<ProductViewModel> GetProducts(string text = null, Guid? supplierModelID = null, int? startRowIndex = null, int? pageSize = null);
 
          [OperationContract]
          ProductViewModel GetProduct(Guid productID);

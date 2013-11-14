@@ -77,7 +77,7 @@ namespace EXPEDIT.Transactions.Services {
         }
 
 
-        public IEnumerable<ProductViewModel> GetProducts()
+        public IEnumerable<ProductViewModel> GetProducts(string text = null, Guid? supplierModelID = null, int? startRowIndex = null, int? pageSize=null)
         {
             var supplier = _users.CompanyID;
             var application = _users.ApplicationID;
@@ -85,8 +85,9 @@ namespace EXPEDIT.Transactions.Services {
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new XODBC(_users.ApplicationConnectionString, null);
-                return (from o in d.E_SP_GetProductModels(application, supplier, ConstantsHelper.DEVICE_TYPE_SOFTWARE) 
+                return (from o in d.E_SP_GetProductModels(text, application, supplier, ConstantsHelper.DEVICE_TYPE_SOFTWARE, supplierModelID, startRowIndex, pageSize) 
                         select new ProductViewModel { 
+                            SupplierModelID = o.SupplierModelID,
                             ModelID = o.ModelID, 
                             CompanyID = o.CompanyID, 
                             MediaDirectory = directory, 
@@ -129,7 +130,7 @@ namespace EXPEDIT.Transactions.Services {
 
         public ProductViewModel GetProduct(Guid productID)
         {
-            throw new NotImplementedException();
+            return GetProducts(null, productID).First();
         }
 
         public void IncrementDownloadCounter(Guid productID)
