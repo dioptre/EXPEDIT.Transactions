@@ -128,14 +128,34 @@ namespace EXPEDIT.Transactions.Services {
         }
 
 
-        public ProductViewModel GetProduct(Guid productID)
+        public ProductViewModel GetProduct(Guid supplierModelID)
         {
-            return GetProducts(null, productID).First();
+            return GetProducts(null, supplierModelID).First();
+        }
+
+        public IEnumerable<ContractConditionViewModel> GetContractConditions(Guid[] referenceIDs)
+        {
+            var supplier = _users.CompanyID;
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new XODBC(_users.ApplicationConnectionString, null);
+                return (from o in d.E_SP_GetProductContractConditions(string.Join(",", referenceIDs), supplier, false, true, false)
+                         select new ContractConditionViewModel
+                         {
+                             ContractID = o.ContractID,
+                             ContractConditionID = o.ContractConditionID,
+                             ContractText = o.ContractText,
+                             IsForDistributors = false,
+                             IsForEndUsers = true,
+                             IsForSuppliers = false
+                         }).ToArray();
+            }
+            
         }
 
         public void IncrementDownloadCounter(Guid productID)
         {
-            var statName = "Downloads";
+            
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new XODBC(_users.ApplicationConnectionString, null, false);
@@ -146,20 +166,35 @@ namespace EXPEDIT.Transactions.Services {
                     refTable = d.GetTableName<DictionaryPart>();
                 else
                     throw new InvalidOperationException(string.Format("Can't increment unknown product {0}.", productID));
-
-                var stat = (from o in d.StatisticDatas
-                            where o.ReferenceID == productID && o.TableType == refTable
-                            && o.StatisticDataName == statName
-                            select o).FirstOrDefault();
-                if (stat == null)
-                {
-                    stat = new StatisticData { StatisticDataID = Guid.NewGuid(), TableType = refTable, ReferenceID = productID, StatisticDataName = statName, Count = 0 };
-                    d.StatisticDatas.AddObject(stat);
-                }
-                stat.Count++;
+                IncrementStatistic(d, productID, refTable, ConstantsHelper.STAT_NAME_DOWNLOADS);              
                 d.SaveChanges();
             }
 
+        }
+
+        public void IncrementBuyCounter(Guid supplierModelID, Guid modelID)
+        {
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new XODBC(_users.ApplicationConnectionString, null, false);               
+                IncrementStatistic(d, supplierModelID, d.GetTableName<SupplierModel>(), ConstantsHelper.STAT_NAME_CLICKS_BUY);
+                IncrementStatistic(d, modelID, d.GetTableName<DictionaryModel>(), ConstantsHelper.STAT_NAME_CLICKS_BUY);
+                d.SaveChanges();
+            }
+        }
+
+        public void IncrementStatistic(XODBC d, Guid referenceID, string referenceTable, string statName)
+        {
+            var stat = (from o in d.StatisticDatas
+                        where o.ReferenceID == referenceID && o.TableType == referenceTable
+                        && o.StatisticDataName == statName
+                        select o).FirstOrDefault();
+            if (stat == null)
+            {
+                stat = new StatisticData { StatisticDataID = Guid.NewGuid(), TableType = referenceTable, ReferenceID = referenceID, StatisticDataName = statName, Count = 0 };
+                d.StatisticDatas.AddObject(stat);
+            }
+            stat.Count++;
         }
        
     }

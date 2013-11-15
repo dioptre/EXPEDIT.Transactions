@@ -13,23 +13,21 @@
 <tr><th width="75px"></th><th></th></tr>
 </thead>
 <tbody>
-    @foreach (var p in Model.Products) {
 <tr>
-<td><img src="@p.Thumbnail" alt="" style="padding: 4px; line-height: 19.5px; border: 1px solid #ddd;" width="60" height="60"></td>
+<td><img src="@Model.Thumbnail" alt="" style="padding: 4px; line-height: 19.5px; border: 1px solid #ddd;" width="60" height="60"></td>
 <td>
-<h2>@p.Title <small>@p.Subtitle</small></h2>
-<p>@p.HTML</p>
-<p><a href="/share/go/@p.UrlInternal">...more information</a></p>
-<p style="text-align: right;">@Html.Raw(p.PricePerUnit == 0 && p.FreeDownloadID.HasValue ? 
-        string.Format("<button class=\"btn btn-info\" onclick=\"window.location.href='" + Url.Action("download",new { area="EXPEDIT.Transactions", controller="User", id=p.FreeDownloadID, @ref=p.ProductID}) + "'\">Free Download</button></p>", p.ProductID, p.FreeDownloadID) 
-    :   string.Format("<button class=\"btn btn-info\" onclick=\"window.location.href='" + Url.Action("buy",new { area="EXPEDIT.Transactions", controller="User", id=p.ProductID}) + "'\">Buy</button></p>", p.ProductID, p.FreeDownloadID)
-    )
-    
-</p>
+<h2>@Model.Title <small>@Model.Subtitle</small></h2>
+<p>@Model.HTML</p>
+    <p>@Html.LabelFor(f=>f.Units)</p>
+    <p>@Html.TextBoxFor(f => f.Units, new { @readonly = true })</p>
+    <p>@Html.LabelFor(f=>f.CostText)</p>
+    <p>@Html.TextBoxFor(f => f.CostText, new { @readonly = true })</p>
+    <p>@Html.LabelFor(f => f.ProductTerms)</p>
+    <p>@Html.TextAreaFor(f=> f.ProductTerms, 7, 70, new {@readonly=true})</p>
+    <p>@Html.Raw(string.Format("<button class=\"btn btn-info\" onclick=\"window.location.href='" + Url.Action("buy",new { area="EXPEDIT.Transactions", controller="User", id=Model.ProductID}) + "'\">Agree</button></p>", Model.ProductID, Model.FreeDownloadID))</p>
 <br>
-<p>Last Updated: @p.LastUpdated | Author: <a href="/share/go/@p.UrlExternal">@p.Manufacturer</a> | Downloads: @p.Downloads | Rating: @string.Format("{0:f2}", p.Rating)/@string.Format("{0:f2}", p.RatingScale)</p>
 </td>
 </tr>
-}
+
 </tbody>
 </table>

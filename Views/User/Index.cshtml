@@ -20,9 +20,10 @@
 <h2>@p.Title <small>@p.Subtitle</small></h2>
 <p>@p.HTML</p>
 <p><a href="/share/go/@p.UrlInternal">...more information</a></p>
+<p style="text-align: right;">@Html.Raw(string.Format("{0} {1:f2} {2} ({3})",p.CurrencyPrefix,p.PricePerUnit,p.CurrencyPostfix, p.ProductUnitName))</p>
 <p style="text-align: right;">@Html.Raw(p.PricePerUnit == 0 && p.FreeDownloadID.HasValue ? 
-        string.Format("<button class=\"btn btn-info\" onclick=\"window.location.href='" + Url.Action("download",new { area="EXPEDIT.Transactions", controller="User", id=p.FreeDownloadID, @ref=p.ProductID}) + "'\">Free Download</button></p>", p.ProductID, p.FreeDownloadID) 
-    :   string.Format("<button class=\"btn btn-info\" onclick=\"window.location.href='" + Url.Action("Buy",new { area="EXPEDIT.Transactions", controller="User", id=p.ProductID}) + "'\">Buy</button></p>", p.ProductID, p.FreeDownloadID)
+        string.Format("<button class=\"btn btn-info\" onclick=\"window.location.href='{0}'\">Free Download</button></p>", Url.Action("download", new { area="EXPEDIT.Transactions", controller="User", id=p.FreeDownloadID, @ref=p.ProductID})  ) 
+    :   string.Format("<button class=\"btn btn-info\" onclick=\"window.location.href='{0}'\">Buy</button></p>", Url.Action("Buy",new { area="EXPEDIT.Transactions", controller="User", id=p.SupplierModelID, @ref=p.ProductID}))
     )
     
 </p>

@@ -45,9 +45,12 @@ namespace EXPEDIT.Transactions.Controllers
             return new HttpNotFoundResult();
         }
 
-        public ActionResult Buy(string id)
+        public ActionResult Buy(string id, string @ref)
         {
-            var m = new OrderProductViewModel(Transactions.GetProduct(new Guid(id)));
+            var supplierModelID = new Guid(id);
+            var modelID = new Guid(@ref);
+            Transactions.IncrementBuyCounter(supplierModelID, modelID);
+            var m = new OrderProductViewModel(Transactions.GetProduct(supplierModelID)) { Units = 1, ContractConditions = Transactions.GetContractConditions(new Guid[] { supplierModelID, modelID }) };
             return View(m);
         }
       

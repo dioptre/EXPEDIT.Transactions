@@ -27,11 +27,16 @@ namespace EXPEDIT.Transactions.Services
          IEnumerable<ProductViewModel> GetProducts(string text = null, Guid? supplierModelID = null, int? startRowIndex = null, int? pageSize = null);
 
          [OperationContract]
-         ProductViewModel GetProduct(Guid productID);
+         ProductViewModel GetProduct(Guid supplierModelID);
 
          [OperationContract]
          void IncrementDownloadCounter(Guid productID);
-  
+
+         [OperationContract]
+         void IncrementBuyCounter(Guid supplierModelID, Guid modelID);
+         
+         [OperationContract]
+         IEnumerable<ContractConditionViewModel> GetContractConditions(Guid[] referenceIDs);
 
     }
 }
