@@ -34,6 +34,9 @@ namespace EXPEDIT.Transactions.Services
 
          [OperationContract]
          void IncrementBuyCounter(Guid supplierModelID, Guid modelID);
+
+         [OperationContract]
+         void IncrementConfirmCounter(Guid supplierModelID, Guid modelID);
          
          [OperationContract]
          IEnumerable<ContractConditionViewModel> GetContractConditions(Guid[] referenceIDs);

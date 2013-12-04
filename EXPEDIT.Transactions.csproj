@@ -152,7 +152,7 @@
     <Content Include="Views\User\Subscriptions.cshtml" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Views\User\ConfirmPayment.cshtml" />
+    <Content Include="Views\User\Confirm.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\User\Buy.cshtml" />

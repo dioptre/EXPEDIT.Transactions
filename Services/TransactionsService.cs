@@ -183,6 +183,17 @@ namespace EXPEDIT.Transactions.Services {
             }
         }
 
+        public void IncrementConfirmCounter(Guid supplierModelID, Guid modelID)
+        {
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new XODBC(_users.ApplicationConnectionString, null, false);
+                IncrementStatistic(d, supplierModelID, d.GetTableName<SupplierModel>(), ConstantsHelper.STAT_NAME_CLICKS_CONFIRM);
+                IncrementStatistic(d, modelID, d.GetTableName<DictionaryModel>(), ConstantsHelper.STAT_NAME_CLICKS_CONFIRM);
+                d.SaveChanges();
+            }
+        }
+
         public void IncrementStatistic(XODBC d, Guid referenceID, string referenceTable, string statName)
         {
             var stat = (from o in d.StatisticDatas

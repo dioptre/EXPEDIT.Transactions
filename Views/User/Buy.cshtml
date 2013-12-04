@@ -24,7 +24,7 @@
     <p>@Html.TextBoxFor(f => f.CostText, new { @readonly = true })</p>
     <p>@Html.LabelFor(f => f.ProductTerms)</p>
     <p>@Html.TextAreaFor(f=> f.ProductTerms, 7, 70, new {@readonly=true})</p>
-    <p>@Html.Raw(string.Format("<button class=\"btn btn-info\" onclick=\"window.location.href='" + Url.Action("buy",new { area="EXPEDIT.Transactions", controller="User", id=Model.ProductID}) + "'\">Agree</button></p>", Model.ProductID, Model.FreeDownloadID))</p>
+    <p>@Html.Raw(string.Format("<button class=\"btn btn-info\" onclick=\"window.location.href='" + Url.Action("Confirm",new { area="EXPEDIT.Transactions", controller="User", id=Model.SupplierModelID, @ref=Model.ProductID}) + "'\">Agree</button></p>"))</p>
 <br>
 </td>
 </tr>

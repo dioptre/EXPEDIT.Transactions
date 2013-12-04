@@ -53,6 +53,17 @@ namespace EXPEDIT.Transactions.Controllers
             var m = new OrderProductViewModel(Transactions.GetProduct(supplierModelID)) { Units = 1, ContractConditions = Transactions.GetContractConditions(new Guid[] { supplierModelID, modelID }) };
             return View(m);
         }
+
+
+        public ActionResult Confirm(string id, string @ref)
+        {
+            var supplierModelID = new Guid(id);
+            var modelID = new Guid(@ref);
+            Transactions.IncrementConfirmCounter(supplierModelID, modelID);
+            var p = new OrderProductViewModel(Transactions.GetProduct(supplierModelID)) { Units = 1, ContractConditions = Transactions.GetContractConditions(new Guid[] { supplierModelID, modelID }) };
+            var m = new OrderViewModel() { OrderID = Guid.NewGuid(), Products = new OrderProductViewModel[] { p } };
+            return View(m);
+        }
       
     }
 
