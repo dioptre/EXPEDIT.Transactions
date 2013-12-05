@@ -3,7 +3,7 @@ using Orchard;
 
 namespace EXPEDIT.Transactions.Services.Payments
 {
-    interface IMerchant : IDependency
+    public interface IMerchant : IDependency
     {
         object Environment { get; set; }
         string EnvironmentString { get; set; }
@@ -12,5 +12,6 @@ namespace EXPEDIT.Transactions.Services.Payments
         string PublicKey { get; set; }
         string ClientPublicKey { get; set; }
         string ClientPrivateKey { get; set; }
+        string ServerReturnURL { get; set; }
     }
 }

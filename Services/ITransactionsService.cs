@@ -12,13 +12,19 @@ namespace EXPEDIT.Transactions.Services
     public interface ITransactionsService : IDependency 
     {
          [OperationContract]
-         void ConfirmPayment(OrderViewModel order);
-         
-         [OperationContract]
-         void ConfirmOrder(OrderViewModel order);
+         void MakePayment(ref OrderViewModel order);
 
          [OperationContract]
-         OrderViewModel GetOrder();
+         void MakePaymentResult(ref OrderViewModel order);
+
+         [OperationContract]
+         void PreparePayment(ref OrderViewModel order);
+
+         [OperationContract]
+         void PreparePaymentResult(ref OrderViewModel order);
+
+         [OperationContract]
+         OrderViewModel GetOrder(Guid orderID);
 
          [OperationContract]
          void UpdateOrder(OrderViewModel order);
@@ -34,9 +40,6 @@ namespace EXPEDIT.Transactions.Services
 
          [OperationContract]
          void IncrementBuyCounter(Guid supplierModelID, Guid modelID);
-
-         [OperationContract]
-         void IncrementConfirmCounter(Guid supplierModelID, Guid modelID);
          
          [OperationContract]
          IEnumerable<ContractConditionViewModel> GetContractConditions(Guid[] referenceIDs);

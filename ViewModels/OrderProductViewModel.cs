@@ -17,6 +17,10 @@ namespace EXPEDIT.Transactions.ViewModels
         public decimal? Cost { get { return (PricePerUnit.HasValue ? PricePerUnit.Value * Units : default(decimal?)); } }
         [Required, DisplayName("Subtotal:")]
         public string CostText { get { return string.Format("{0} {1} {2}", CurrencyPrefix, Cost, CurrencyPostfix); } }
+        public bool Paid { get; set; }
+
+        public OrderProductViewModel() : base()
+        { }
 
         public OrderProductViewModel(ProductViewModel parent)
         {

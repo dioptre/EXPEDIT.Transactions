@@ -128,13 +128,13 @@
     <Compile Include="Services\Payments\BraintreeUtils.cs" />
     <Compile Include="Services\Payments\IMerchant.cs" />
     <Compile Include="Services\Payments\IPayment.cs" />
+    <Compile Include="Services\Payments\PaymentUtils.cs" />
     <Compile Include="Services\TransactionsService.cs" />
     <Compile Include="ViewModels\ContractConditionViewModel.cs" />
     <Compile Include="ViewModels\OrderProductViewModel.cs" />
     <Compile Include="ViewModels\ProductsViewModel.cs" />
     <Compile Include="ViewModels\OrderViewModel.cs" />
     <Compile Include="ViewModels\ProductViewModel.cs" />
-    <Compile Include="ViewModels\TransactionsViewModel.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Models\" />
@@ -146,16 +146,16 @@
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Views\User\Result.cshtml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Views\User\Subscriptions.cshtml" />
+    <Content Include="Views\User\PaymentResult.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\User\Confirm.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\User\Buy.cshtml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Views\User\BuyProductPartial.cshtml" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

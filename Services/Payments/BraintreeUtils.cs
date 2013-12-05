@@ -25,21 +25,11 @@ namespace EXPEDIT.Transactions.Services.Payments
                 MerchantId = "pfz8b9b2p286yp89",
                 PublicKey = "59mqjnsyqypw6dpc",
                 PrivateKey = "3478eedc910a0d4793a8d472571851df",
-                ClientPublicKey = @"MIIBCgKCAQEAwvQwIlEDkcHNpNfeIDQHIMvhZ/zb6y01QgVRXXbitzxSra5M+5zffgp1fT4vdIseuj435+SuYRmIQU4cHzK18BvZahCuyaOGV6eZIaOhsNTUd2vcSaTud96mxDmbeKfW3Gd2HqugH3RiwL5DpickR3hM6dlaArQBgcZlnpI4qAIVKbPePXk9Nj1aJ7mZOJWuqdwtAY7TkC7zc0lmFQWxZXQsmNSSUf+SY7OpA9mZX0KNs7HN4W0eQyqhQzjrJrrWrlCEWKaJlURZaDQ8fVrIU2Km99O8/yW3/TurCQDHThXFeFPBrul2SQ6ejQHpv93BN1bAiEVqjnr+FqdEA99mgwIDAQAB"
+                ClientPublicKey = @"MIIBCgKCAQEAwvQwIlEDkcHNpNfeIDQHIMvhZ/zb6y01QgVRXXbitzxSra5M+5zffgp1fT4vdIseuj435+SuYRmIQU4cHzK18BvZahCuyaOGV6eZIaOhsNTUd2vcSaTud96mxDmbeKfW3Gd2HqugH3RiwL5DpickR3hM6dlaArQBgcZlnpI4qAIVKbPePXk9Nj1aJ7mZOJWuqdwtAY7TkC7zc0lmFQWxZXQsmNSSUf+SY7OpA9mZX0KNs7HN4W0eQyqhQzjrJrrWrlCEWKaJlURZaDQ8fVrIU2Km99O8/yW3/TurCQDHThXFeFPBrul2SQ6ejQHpv93BN1bAiEVqjnr+FqdEA99mgwIDAQAB",
+                ServerReturnURL = "http://eodb/store/user/PaymentResult/"
+
             };
             _merchant = merchant.ActLike<IMerchant>();
-
-
-        }
-
-        Braintree.Environment EnvironmentObject {get;set;}
-
- 
-      
-
-
-        public bool MakePayment(OrderViewModel order)
-        {
             if (gateway == null)
                 gateway = new BraintreeGateway
                 {
@@ -48,62 +38,89 @@ namespace EXPEDIT.Transactions.Services.Payments
                     PublicKey = _merchant.PublicKey,
                     PrivateKey = _merchant.PrivateKey
                 };
-           throw new NotImplementedException();
-           //m = new TransactionsViewModel { TransactionsID = Guid.NewGuid() };
-           //using (new System.Transactions.TransactionScope(System.Transactions.TransactionScopeOption.Suppress))
-           //{
-           //    using (var c = new EXPEDIT.Utils.DAL.Models.EODBC(EXPEDIT.Utils.DAL.DefaultConnectionString.DefaultConfigString, null))
-           //    {
-           //        m.TransactionsID = (from o in c.Companies select o).FirstOrDefault().CompanyID;
-           //    }
-           //}
+        }
 
-           //ViewData["TrData"] = BraintreeUtils.Gateway.TrData(
-           //    new CustomerRequest { },
-           //    "http://localhost/Transactions/User/Result"
-           //);
-           //ViewData["TransparentRedirectURL"] = BraintreeUtils.Gateway.TransparentRedirect.Url;
+        Braintree.Environment EnvironmentObject {get;set;}
 
+        public void PreparePayment(ref OrderViewModel order)
+        {          
+            order.PaymentRedirectURL = gateway.TransparentRedirect.Url;
+            order.PaymentData = gateway.TrData(
+                new CustomerRequest 
+                {
+                    //FirstName = order.PaymentFirstname,
+                    //LastName = order.PaymentLastname,
+                    //CreditCard = new CreditCardRequest
+                    //{
+                    //    BillingAddress = new CreditCardAddressRequest
+                    //    {
+                    //        PostalCode = order.PaymentPostcode
+                    //    },
+                    //    Number = order.PaymentNumber,
+                    //    ExpirationMonth = order.PaymentExpirationMonth,
+                    //    ExpirationYear = order.PaymentExpirationYear,
+                    //    CVV = order.PaymentVerification
+                    //}
+                }
+                , string.Format("{0}{1}", _merchant.ServerReturnURL, order.OrderID)
+             );
+        }
 
+        public void PreparePaymentResult(ref OrderViewModel order)
+        {
 
+            Result<Customer> result = gateway.TransparentRedirect.ConfirmCustomer(order.PaymentQuery);
+            if (result.IsSuccess())
+            {
+                order.PaymentQueryResponse = result.Target.Email;
+                order.PaymentCustomerID = result.Target.Id;
+                order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.ReceivedCustomer;
+            }
+            else
+            {
+                order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Error;
+                order.PaymentError = (uint)PaymentUtils.PaymentError.BadCustomerID;
+                order.PaymentQueryResponse = string.Join(", ", result.Errors.DeepAll());
+            }
 
-           //var customerRequest = new CustomerSearchRequest().
-           // Id.Is(Request.QueryString["id"]);
-           //ResourceCollection<Customer> customers = BraintreeUtils.Gateway.Customer.Search(customerRequest);
-           //// There should only ever be one customer with the given ID
-           //Customer customer = customers.FirstItem;
-           //string PaymentMethodToken = customer.CreditCards[0].Token;
-           //var SubscriptionRequest = new SubscriptionRequest
-           //{
-           //    PaymentMethodToken = PaymentMethodToken,
-           //    PlanId = "test_plan_1"
-           //};
-           //Result<Subscription> result = BraintreeUtils.Gateway.Subscription.Create(SubscriptionRequest);
+        }
 
-           //if (result.IsSuccess())
-           //{
-           //    ViewData["Message"] = result.Target.Status;
-           //}
-           //else
-           //{
-           //    ViewData["Message"] = string.Join(", ", result.Errors.DeepAll());
-           //}
+        public void MakePayment(ref OrderViewModel order)
+        {
+            //var customerRequest = new CustomerSearchRequest().Id.Is(order.PaymentCustomerID);
+            //ResourceCollection<Customer> customers = gateway.Customer.Search(customerRequest);
+            //// There should only ever be one customer with the given ID
+            //Customer customer = customers.FirstItem;
+            Customer customer = gateway.Customer.Find(order.PaymentCustomerID);
+            string PaymentMethodToken = customer.CreditCards[0].Token;
+            foreach (var p in order.Products)
+            {
+                var SubscriptionRequest = new SubscriptionRequest
+                {
+                    PaymentMethodToken = PaymentMethodToken,
+                    PlanId = p.PaymentProviderProductName
+                };
+                Result<Subscription> result = gateway.Subscription.Create(SubscriptionRequest);
 
+                if (result.IsSuccess())
+                {
+                    order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Subscribed;
+                    order.PaymentResponse = result.Target.Status.ToString();
+                    p.Paid = true;
+                }
+                else
+                {
+                    order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Error;
+                    order.PaymentError = (uint)PaymentUtils.PaymentError.BadPayment;
+                    order.PaymentResponse = string.Join(", ", result.Errors.DeepAll());
+                    break;
+                }
+            }
+        }
 
-           //Result<Customer> result = BraintreeUtils.Gateway.TransparentRedirect.ConfirmCustomer(Request.Url.Query);
-           //if (result.IsSuccess())
-           //{
-           //    ViewData["Message"] = result.Target.Email;
-           //    ViewData["CustomerId"] = result.Target.Id;
-           //}
-           //else
-           //{
-           //    ViewData["Message"] = string.Join(", ", result.Errors.DeepAll());
-           //}
-
-
-
-
+        public void MakePaymentResult(ref OrderViewModel order)
+        {
+            
         }
     }
 }

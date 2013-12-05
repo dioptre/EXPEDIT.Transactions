@@ -11,6 +11,7 @@ namespace EXPEDIT.Transactions.ViewModels
     {
         [HiddenInput, Required, DisplayName("SKU:")]
         public Guid? SupplierModelID { get; set; }
+        public Guid? SupplierPartID { get; set; }
         public Guid? ModelID { get; set; } //ProductID
         public Guid? PartID { get; set; } //Also...ProductID
         public Guid? CompanyID { get; set; }
@@ -48,7 +49,7 @@ namespace EXPEDIT.Transactions.ViewModels
         public decimal? UnitDefault { get; set; }
         public decimal? UnitMaximum { get; set; }
         public decimal? UnitMinimum { get; set; }
-
+        
         public IEnumerable<ContractConditionViewModel> ContractConditions { get; set; }
         [DisplayName("Terms:")]
         public string ProductTerms { get { return string.Join("\r\n", (from o in ContractConditions select o.ContractText).ToArray()); } }

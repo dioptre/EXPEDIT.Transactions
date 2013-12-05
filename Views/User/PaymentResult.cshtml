@@ -1,4 +1,4 @@
-﻿@model EXPEDIT.Transactions.ViewModels.TransactionsViewModel
+﻿@model EXPEDIT.Transactions.ViewModels.OrderViewModel
 @{
     Style.Require("Transactions");
     HtmlHelper.ClientValidationEnabled = true;
@@ -7,13 +7,14 @@
 }
 <p>hi</p>
 @Html.AntiForgeryToken()
-@Html.TextBoxFor(f => f.TransactionsID)
+
 <html>
   <body>
     <h1>Transaction Response</h1>
     <ul>
-      <li>Status - @ViewData["Message"]</li>
+      <li>Status - @Model.PaymentQueryResponse</li>
     </ul>
     @Html.ActionLink("Click here to sign this customer up for a recurring payment", "Subscriptions", "User", new { area = "EXPEDIT.Transactions", id = ViewData["CustomerId"] }, null)
   </body>
 </html>
+

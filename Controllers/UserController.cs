@@ -31,7 +31,8 @@ namespace EXPEDIT.Transactions.Controllers
             return View(m);
         }
 
-        public ActionResult download(string id, string @ref)
+        [Authorize]
+        public ActionResult Download(string id, string @ref)
         {
             try
             {
@@ -45,23 +46,36 @@ namespace EXPEDIT.Transactions.Controllers
             return new HttpNotFoundResult();
         }
 
+        [Authorize]
         public ActionResult Buy(string id, string @ref)
         {
             var supplierModelID = new Guid(id);
             var modelID = new Guid(@ref);
             Transactions.IncrementBuyCounter(supplierModelID, modelID);
-            var m = new OrderProductViewModel(Transactions.GetProduct(supplierModelID)) { Units = 1, ContractConditions = Transactions.GetContractConditions(new Guid[] { supplierModelID, modelID }) };
+            var p = new OrderProductViewModel(Transactions.GetProduct(supplierModelID)) { Units = 1, ContractConditions = Transactions.GetContractConditions(new Guid[] { supplierModelID, modelID }) };
+            var m = new OrderViewModel() { OrderID = Guid.NewGuid(), Products = new OrderProductViewModel[] { p } };
+            Transactions.UpdateOrder(m);
             return View(m);
         }
 
-
-        public ActionResult Confirm(string id, string @ref)
+        [Authorize]
+        public ActionResult Confirm(string id)
         {
-            var supplierModelID = new Guid(id);
-            var modelID = new Guid(@ref);
-            Transactions.IncrementConfirmCounter(supplierModelID, modelID);
-            var p = new OrderProductViewModel(Transactions.GetProduct(supplierModelID)) { Units = 1, ContractConditions = Transactions.GetContractConditions(new Guid[] { supplierModelID, modelID }) };
-            var m = new OrderViewModel() { OrderID = Guid.NewGuid(), Products = new OrderProductViewModel[] { p } };
+            var m = Transactions.GetOrder(new Guid(id));
+            Transactions.PreparePayment(ref m);           
+            return View(m);
+        }
+
+        [Authorize]
+        public ActionResult PaymentResult(string id)
+        {
+            var m = Transactions.GetOrder(new Guid(id));
+            m.PaymentQuery = Request.Url.Query;
+            Transactions.PreparePaymentResult(ref m);
+            if (m.PaymentStatus > 0)
+            {                
+                Transactions.MakePayment(ref m);
+            }
             return View(m);
         }
       
