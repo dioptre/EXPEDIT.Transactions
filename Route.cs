@@ -37,7 +37,7 @@ namespace EXPEDIT.Transactions
                  new RouteDescriptor {
                     Priority = 5,
                     Route = new Route(
-                        "Transactions/{controller}/{action}/{id}/{verb}",
+                        "Transactions/{controller}/{action}/{id}/{ref}",
                         new RouteValueDictionary {
                             {"area", "EXPEDIT.Transactions"},
                             {"controller", "User"}                            
@@ -54,7 +54,7 @@ namespace EXPEDIT.Transactions
                  new RouteDescriptor {
                     Priority = 5,
                     Route = new Route(
-                        "Transactions/{controller}/{action}/{id}/{ref}",
+                        "Transactions/{controller}/{action}/{id}/{ref}/{verb}",
                         new RouteValueDictionary {
                             {"area", "EXPEDIT.Transactions"},
                             {"controller", "User"}                            
@@ -89,7 +89,24 @@ namespace EXPEDIT.Transactions
                  new RouteDescriptor {
                     Priority = 5,
                     Route = new Route(
-                        "Store/{controller}/{action}/{id}/{verb}",
+                        "Store/{controller}/{action}/{id}/{ref}",
+                        new RouteValueDictionary {
+                            {"area", "EXPEDIT.Transactions"},
+                            {"controller", "User"}                            
+                        },
+                        new RouteValueDictionary {
+                            {"area", "EXPEDIT.Transactions"},
+                            {"controller", "User"},                          
+                        },
+                        new RouteValueDictionary {
+                            {"area", "EXPEDIT.Transactions"}
+                        },
+                        new MvcRouteHandler())
+                },
+                 new RouteDescriptor {
+                    Priority = 5,
+                    Route = new Route(
+                        "Store/{controller}/{action}/{id}/{ref}/{verb}",
                         new RouteValueDictionary {
                             {"area", "EXPEDIT.Transactions"},
                             {"controller", "User"}                            
@@ -124,7 +141,24 @@ namespace EXPEDIT.Transactions
                  new RouteDescriptor {
                     Priority = 5,
                     Route = new Route(
-                        "Products/{controller}/{action}/{id}/{verb}",
+                        "Products/{controller}/{action}/{id}/{ref}",
+                        new RouteValueDictionary {
+                            {"area", "EXPEDIT.Transactions"},
+                            {"controller", "User"}                            
+                        },
+                        new RouteValueDictionary {
+                            {"area", "EXPEDIT.Transactions"},
+                            {"controller", "User"},                          
+                        },
+                        new RouteValueDictionary {
+                            {"area", "EXPEDIT.Transactions"}
+                        },
+                        new MvcRouteHandler())
+                },
+                 new RouteDescriptor {
+                    Priority = 5,
+                    Route = new Route(
+                        "Products/{controller}/{action}/{id}/{ref}/{verb}",
                         new RouteValueDictionary {
                             {"area", "EXPEDIT.Transactions"},
                             {"controller", "User"}                            

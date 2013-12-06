@@ -15,5 +15,6 @@ namespace EXPEDIT.Transactions.Helpers
         public static string STAT_NAME_DOWNLOADS = "Downloads";
         public static string STAT_NAME_CLICKS_BUY = "ClicksBuy";
         public static string STAT_NAME_CLICKS_CONFIRM = "ClicksConfirm";
+        public static string METADATA_ANTIFORGERY = "E_ANTIFORGERY";
     }
 }

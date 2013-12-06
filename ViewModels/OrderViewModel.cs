@@ -27,6 +27,8 @@ namespace EXPEDIT.Transactions.ViewModels
         public string PaymentExpirationMonth { get; set; }
         public string PaymentExpirationYear { get; set; }
         public string PaymentVerification { get; set; }
+        public Guid? PaymentAntiForgeryKey { get; set; }
+
         public SelectList TransactionType { get; set; }
 
     }

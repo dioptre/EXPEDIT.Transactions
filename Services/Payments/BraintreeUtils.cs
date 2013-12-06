@@ -6,17 +6,18 @@ using Braintree;
 using EXPEDIT.Transactions.ViewModels;
 using XODB.Services;
 using ImpromptuInterface;
+using System.Collections.Concurrent;
+using Orchard;
 
 namespace EXPEDIT.Transactions.Services.Payments
 {
     public class BraintreeUtils : IPayment
     {
-
         private static BraintreeGateway gateway = null;
         private IUsersService _users;
         private IMerchant _merchant;
 
-        public BraintreeUtils(IUsersService users)
+        public BraintreeUtils(IUsersService users, IOrchardServices orchardServices)
         {
             _users = users;
             var merchant = new
@@ -26,8 +27,7 @@ namespace EXPEDIT.Transactions.Services.Payments
                 PublicKey = "59mqjnsyqypw6dpc",
                 PrivateKey = "3478eedc910a0d4793a8d472571851df",
                 ClientPublicKey = @"MIIBCgKCAQEAwvQwIlEDkcHNpNfeIDQHIMvhZ/zb6y01QgVRXXbitzxSra5M+5zffgp1fT4vdIseuj435+SuYRmIQU4cHzK18BvZahCuyaOGV6eZIaOhsNTUd2vcSaTud96mxDmbeKfW3Gd2HqugH3RiwL5DpickR3hM6dlaArQBgcZlnpI4qAIVKbPePXk9Nj1aJ7mZOJWuqdwtAY7TkC7zc0lmFQWxZXQsmNSSUf+SY7OpA9mZX0KNs7HN4W0eQyqhQzjrJrrWrlCEWKaJlURZaDQ8fVrIU2Km99O8/yW3/TurCQDHThXFeFPBrul2SQ6ejQHpv93BN1bAiEVqjnr+FqdEA99mgwIDAQAB",
-                ServerReturnURL = "http://eodb/store/user/PaymentResult/"
-
+                ServerReturnURL = string.Format("{0}/store/user/PaymentResult", orchardServices.WorkContext.CurrentSite.BaseUrl)
             };
             _merchant = merchant.ActLike<IMerchant>();
             if (gateway == null)
@@ -43,11 +43,17 @@ namespace EXPEDIT.Transactions.Services.Payments
         Braintree.Environment EnvironmentObject {get;set;}
 
         public void PreparePayment(ref OrderViewModel order)
-        {          
+        {
+            if (!order.OrderID.HasValue)
+                throw new NotSupportedException("Can't make an order without an order ID");            
             order.PaymentRedirectURL = gateway.TransparentRedirect.Url;
-            order.PaymentData = gateway.TrData(
-                new CustomerRequest 
+            CustomerRequest customerRequest;
+            if (string.IsNullOrWhiteSpace(order.PaymentCustomerID))
+                customerRequest = new CustomerRequest {};
+            else
+                customerRequest = new CustomerRequest
                 {
+                    CustomerId = order.PaymentCustomerID
                     //FirstName = order.PaymentFirstname,
                     //LastName = order.PaymentLastname,
                     //CreditCard = new CreditCardRequest
@@ -61,8 +67,10 @@ namespace EXPEDIT.Transactions.Services.Payments
                     //    ExpirationYear = order.PaymentExpirationYear,
                     //    CVV = order.PaymentVerification
                     //}
-                }
-                , string.Format("{0}{1}", _merchant.ServerReturnURL, order.OrderID)
+                };
+            order.PaymentData = gateway.TrData(
+                customerRequest
+                , string.Format("{0}/{1}/{2}/", _merchant.ServerReturnURL, order.OrderID, order.PaymentAntiForgeryKey)
              );
         }
 
@@ -93,8 +101,10 @@ namespace EXPEDIT.Transactions.Services.Payments
             //Customer customer = customers.FirstItem;
             Customer customer = gateway.Customer.Find(order.PaymentCustomerID);
             string PaymentMethodToken = customer.CreditCards[0].Token;
+            if (order.Products.Count() != 1 || order.Products.Where(f => string.IsNullOrWhiteSpace(f.PaymentProviderProductName)).Count() > 0)
+                throw new NotSupportedException("Only Subscription Products and Services Supported"); //TODO: Support once offs
             foreach (var p in order.Products)
-            {
+            {                
                 var SubscriptionRequest = new SubscriptionRequest
                 {
                     PaymentMethodToken = PaymentMethodToken,

@@ -89,6 +89,17 @@ namespace EXPEDIT.Transactions.Services {
                     c.AgreedByContactID = contact;
                     c.Agreed = DateTime.UtcNow;
                 }
+                order.PaymentAntiForgeryKey = Guid.NewGuid();
+                var md = new MetaData { MetaDataID = order.PaymentAntiForgeryKey.Value, MetaDataType = ConstantsHelper.METADATA_ANTIFORGERY, ContentToIndex = string.Format("{0}", orderID) };
+                d.MetaDatas.AddObject(md);
+                var ppProducts = order.Products.Where(f => f.PaymentProviderProductID != null).Select(f => f.PaymentProviderProductID.Value).ToArray();
+                order.PaymentCustomerID = (from o in d.ApplicationPaymentProviderProducts
+                          join p in d.ApplicationPaymentProviderContacts on o.ApplicationPaymentProviderID equals p.ApplicationPaymentProviderID
+                          where ppProducts.Contains(o.ApplicationPaymentProviderProductID)
+                          && p.ContactID == contact
+                          && p.Version == 0
+                          && p.VersionDeletedBy == null
+                          select p.CustomerReference).FirstOrDefault();                
                 d.SaveChanges();
             }
             _payment.PreparePayment(ref order);
@@ -96,7 +107,58 @@ namespace EXPEDIT.Transactions.Services {
 
         public void PreparePaymentResult(ref OrderViewModel order)
         {
+            var orderID = string.Format("{0}", order.OrderID.Value);
+            var antiForgeryKey = order.PaymentAntiForgeryKey;
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var md = (from o in d.MetaDatas 
+                          where o.MetaDataID==antiForgeryKey.Value
+                          && o.MetaDataType == ConstantsHelper.METADATA_ANTIFORGERY 
+                          && o.ContentToIndex == orderID
+                          && o.Version == 0
+                          && o.VersionDeletedBy == null
+                          select o).Single();
+                d.MetaDatas.DeleteObject(md);
+                d.SaveChanges();
+            }
             _payment.PreparePaymentResult(ref order);
+            var customerID = order.PaymentCustomerID;
+            var contact = _users.ContactID;
+            var ppProducts = order.Products.Where(f=>f.PaymentProviderProductID!=null).Select(f=>f.PaymentProviderProductID.Value).ToArray();
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                //Update customer id
+                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var pc = (from o in d.ApplicationPaymentProviderProducts
+                          join p in d.ApplicationPaymentProviderContacts on o.ApplicationPaymentProviderID equals p.ApplicationPaymentProviderID
+                          where ppProducts.Contains(o.ApplicationPaymentProviderProductID) 
+                          && p.ContactID == contact
+                          && p.Version == 0
+                          && p.VersionDeletedBy == null
+                          select p).Distinct();
+                var old = from o in pc where o.CustomerReference != customerID select o;
+                foreach (var o in old)
+                    d.ApplicationPaymentProviderContacts.DeleteObject(o);
+                if (!pc.Any(f => f.CustomerReference == customerID))
+                {
+                    var pp = (from o in d.ApplicationPaymentProviderProducts
+                          join p in d.ApplicationPaymentProviders on o.ApplicationPaymentProviderID equals p.ApplicationPaymentProviderID
+                          where ppProducts.Contains(o.ApplicationPaymentProviderProductID) 
+                          && p.Version == 0
+                          && p.VersionDeletedBy == null
+                          select p.ApplicationPaymentProviderID).First();
+                    var c = new ApplicationPaymentProviderContact
+                    {
+                        ApplicationPaymentProviderID = pp,
+                        ApplicationPaymentProviderContactID = Guid.NewGuid(),
+                        CustomerReference = customerID,
+                        ContactID = contact
+                    };
+                    d.ApplicationPaymentProviderContacts.AddObject(c);
+                }
+                d.SaveChanges();
+            }
         }
          
 
@@ -106,7 +168,14 @@ namespace EXPEDIT.Transactions.Services {
             {
                 var d = new XODBC(_users.ApplicationConnectionString, null);
                 var items = (from o in d.SupplyItems where o.Supply.SupplierPurchaseOrderID==orderID && o.Version==0 && o.VersionDeletedBy == null 
-                             select new OrderProductViewModel { SupplierModelID = o.SupplierModelID, ModelID=o.ModelID, PartID=o.PartID });
+                             select new OrderProductViewModel { 
+                                 SupplierModelID = o.SupplierModelID, 
+                                 SupplierPartID = o.SupplierPartID,
+                                 ModelID=o.ModelID, 
+                                 PartID=o.PartID, 
+                                 PaymentProviderProductID = o.ApplicationPaymentProviderProductID,
+                                 PaymentProviderProductName= (o.ApplicationPaymentProviderProduct==null) ? null : o.ApplicationPaymentProviderProduct.PaymentProviderProductName 
+                             });
                 var m = new OrderViewModel { OrderID = orderID, Products = items.ToList() };
                 return m;
             }
@@ -156,7 +225,15 @@ namespace EXPEDIT.Transactions.Services {
                     if (item != null)
                         oldItems.Remove(item);
                     else {
-                        item = new SupplyItem { SupplyID = s.SupplyID, SupplyItemID = Guid.NewGuid() };
+                        item = new SupplyItem { 
+                            SupplyID = s.SupplyID, 
+                            SupplyItemID = Guid.NewGuid(),
+                            ModelID = p.ModelID,
+                            PartID = p.PartID,
+                            SupplierModelID = p.SupplierModelID,
+                            SupplierPartID = p.SupplierPartID,
+                            ApplicationPaymentProviderProductID = p.PaymentProviderProductID
+                        };
                         d.SupplyItems.AddObject(item);
                     }
                     item.CurrencyID = p.CurrencyID;
@@ -269,7 +346,7 @@ namespace EXPEDIT.Transactions.Services {
                             FreeDownloadID = o.FreeDownloadID,
                             Downloads = o.Downloads,
                             PaymentProviderID = o.ApplicationPaymentProviderID,
-                            PaymentProviderProductID = o.ApplicationPaymentProviderID,
+                            PaymentProviderProductID = o.ApplicationPaymentProviderProductID,
                             PaymentProviderProductName = o.PaymentProviderProductName,
                             ProductID = o.ProductID,
                             ProductUnitID = o.ProductUnitID,

@@ -67,9 +67,10 @@ namespace EXPEDIT.Transactions.Controllers
         }
 
         [Authorize]
-        public ActionResult PaymentResult(string id)
+        public ActionResult PaymentResult(string id, string @ref)
         {
             var m = Transactions.GetOrder(new Guid(id));
+            m.PaymentAntiForgeryKey = new Guid(@ref);
             m.PaymentQuery = Request.Url.Query;
             Transactions.PreparePaymentResult(ref m);
             if (m.PaymentStatus > 0)
