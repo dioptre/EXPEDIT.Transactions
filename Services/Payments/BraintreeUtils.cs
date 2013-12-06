@@ -53,7 +53,15 @@ namespace EXPEDIT.Transactions.Services.Payments
             else
                 customerRequest = new CustomerRequest
                 {
-                    CustomerId = order.PaymentCustomerID
+                    CustomerId = order.PaymentCustomerID,
+                    CreditCard = new CreditCardRequest()
+                    {
+                        Options = new CreditCardOptionsRequest()
+                        {
+                            MakeDefault = true,
+                            VerifyCard = true
+                        }
+                    }
                     //FirstName = order.PaymentFirstname,
                     //LastName = order.PaymentLastname,
                     //CreditCard = new CreditCardRequest
