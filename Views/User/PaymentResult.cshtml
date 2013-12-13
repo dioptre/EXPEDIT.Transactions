@@ -3,18 +3,13 @@
     Style.Require("Transactions");
     HtmlHelper.ClientValidationEnabled = true;
     HtmlHelper.UnobtrusiveJavaScriptEnabled = true;
-    Layout.Title = T("Test").ToString();
+    Layout.Title = T("Payment Result").ToString();
 }
-<p>hi</p>
 @Html.AntiForgeryToken()
-
-<html>
-  <body>
-    <h1>Transaction Response</h1>
-    <ul>
-      <li>Status - @Model.PaymentQueryResponse</li>
-    </ul>
-    @Html.ActionLink("Click here to sign this customer up for a recurring payment", "Subscriptions", "User", new { area = "EXPEDIT.Transactions", id = ViewData["CustomerId"] }, null)
-  </body>
-</html>
-
+<h1>Transaction @((Model.PaymentStatus & 0x1) == 0x1 ? "Completed" : "Failed")</h1>
+<h2>Download Details:</h2>
+<ul>
+    <li>Invoice</li>
+    <li>Download Software</li>
+    <li>User Guide</li>
+</ul>

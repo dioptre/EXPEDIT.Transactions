@@ -27,7 +27,13 @@ namespace EXPEDIT.Transactions.Services
          OrderViewModel GetOrder(Guid orderID);
 
          [OperationContract]
+         void GetOrderOwner(ref OrderViewModel order);
+
+         [OperationContract]
          void UpdateOrder(OrderViewModel order);
+
+         [OperationContract]
+         void UpdateOrderOwner(OrderViewModel order);
 
          [OperationContract]
          IEnumerable<ProductViewModel> GetProducts(string text = null, Guid? supplierModelID = null, int? startRowIndex = null, int? pageSize = null);

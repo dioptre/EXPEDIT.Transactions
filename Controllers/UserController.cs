@@ -62,7 +62,8 @@ namespace EXPEDIT.Transactions.Controllers
         public ActionResult Confirm(string id)
         {
             var m = Transactions.GetOrder(new Guid(id));
-            Transactions.PreparePayment(ref m);           
+            Transactions.GetOrderOwner(ref m);
+            Transactions.PreparePayment(ref m);      
             return View(m);
         }
 

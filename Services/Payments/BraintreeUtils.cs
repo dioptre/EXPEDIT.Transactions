@@ -46,12 +46,9 @@ namespace EXPEDIT.Transactions.Services.Payments
         {
             if (!order.OrderID.HasValue)
                 throw new NotSupportedException("Can't make an order without an order ID");            
-            order.PaymentRedirectURL = gateway.TransparentRedirect.Url;
-            CustomerRequest customerRequest;
-            if (string.IsNullOrWhiteSpace(order.PaymentCustomerID))
-                customerRequest = new CustomerRequest {};
-            else
-                customerRequest = new CustomerRequest
+            order.PaymentRedirectURL = gateway.TransparentRedirect.Url;            
+            order.PaymentData = gateway.TrData(
+                new CustomerRequest
                 {
                     CustomerId = order.PaymentCustomerID,
                     CreditCard = new CreditCardRequest()
@@ -62,22 +59,7 @@ namespace EXPEDIT.Transactions.Services.Payments
                             VerifyCard = true
                         }
                     }
-                    //FirstName = order.PaymentFirstname,
-                    //LastName = order.PaymentLastname,
-                    //CreditCard = new CreditCardRequest
-                    //{
-                    //    BillingAddress = new CreditCardAddressRequest
-                    //    {
-                    //        PostalCode = order.PaymentPostcode
-                    //    },
-                    //    Number = order.PaymentNumber,
-                    //    ExpirationMonth = order.PaymentExpirationMonth,
-                    //    ExpirationYear = order.PaymentExpirationYear,
-                    //    CVV = order.PaymentVerification
-                    //}
-                };
-            order.PaymentData = gateway.TrData(
-                customerRequest
+                }
                 , string.Format("{0}/{1}/{2}/", _merchant.ServerReturnURL, order.OrderID, order.PaymentAntiForgeryKey)
              );
         }
@@ -87,10 +69,24 @@ namespace EXPEDIT.Transactions.Services.Payments
 
             Result<Customer> result = gateway.TransparentRedirect.ConfirmCustomer(order.PaymentQuery);
             if (result.IsSuccess())
-            {
-                order.PaymentQueryResponse = result.Target.Email;
+            {                
+                order.PaymentEmail = result.Target.Email;
+                order.PaymentFirstname = result.Target.FirstName;
+                order.PaymentLastname = result.Target.LastName;
+                if (result.Target.Addresses != null)
+                {
+                    var address = (from o in result.Target.Addresses orderby o.CreatedAt descending select o).FirstOrDefault();
+                    if (address != null)
+                    {
+                        order.PaymentStreet = address.StreetAddress;
+                        order.PaymentStreetExtended = address.ExtendedAddress;
+                        order.PaymentLocality = address.Locality;
+                        order.PaymentRegion = address.Region;
+                        order.PaymentPostcode = address.PostalCode;
+                    }
+                }
                 order.PaymentCustomerID = result.Target.Id;
-                order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.ReceivedCustomer;
+                order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.ReceivedCustomer | (uint)PaymentUtils.PaymentStatus.Success;
             }
             else
             {
@@ -122,7 +118,7 @@ namespace EXPEDIT.Transactions.Services.Payments
 
                 if (result.IsSuccess())
                 {
-                    order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Subscribed;
+                    order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Subscribed | (uint)PaymentUtils.PaymentStatus.Success;
                     order.PaymentResponse = result.Target.Status.ToString();
                     p.Paid = true;
                 }

@@ -28,6 +28,7 @@ using EXPEDIT.Transactions.Helpers;
 using XODB.Services;
 using Orchard.Media.Services;
 using EXPEDIT.Transactions.Services.Payments;
+using EntityFramework.Extensions;
 
 namespace EXPEDIT.Transactions.Services {
     
@@ -91,17 +92,10 @@ namespace EXPEDIT.Transactions.Services {
                 }
                 order.PaymentAntiForgeryKey = Guid.NewGuid();
                 var md = new MetaData { MetaDataID = order.PaymentAntiForgeryKey.Value, MetaDataType = ConstantsHelper.METADATA_ANTIFORGERY, ContentToIndex = string.Format("{0}", orderID) };
-                d.MetaDatas.AddObject(md);
-                var ppProducts = order.Products.Where(f => f.PaymentProviderProductID != null).Select(f => f.PaymentProviderProductID.Value).ToArray();
-                order.PaymentCustomerID = (from o in d.ApplicationPaymentProviderProducts
-                          join p in d.ApplicationPaymentProviderContacts on o.ApplicationPaymentProviderID equals p.ApplicationPaymentProviderID
-                          where ppProducts.Contains(o.ApplicationPaymentProviderProductID)
-                          && p.ContactID == contact
-                          && p.Version == 0
-                          && p.VersionDeletedBy == null
-                          select p.CustomerReference).FirstOrDefault();                
+                d.MetaDatas.AddObject(md);                        
                 d.SaveChanges();
             }
+            GetOrderOwner(ref order);
             _payment.PreparePayment(ref order);
         }
 
@@ -123,42 +117,7 @@ namespace EXPEDIT.Transactions.Services {
                 d.SaveChanges();
             }
             _payment.PreparePaymentResult(ref order);
-            var customerID = order.PaymentCustomerID;
-            var contact = _users.ContactID;
-            var ppProducts = order.Products.Where(f=>f.PaymentProviderProductID!=null).Select(f=>f.PaymentProviderProductID.Value).ToArray();
-            using (new TransactionScope(TransactionScopeOption.Suppress))
-            {
-                //Update customer id
-                var d = new XODBC(_users.ApplicationConnectionString, null);
-                var pc = (from o in d.ApplicationPaymentProviderProducts
-                          join p in d.ApplicationPaymentProviderContacts on o.ApplicationPaymentProviderID equals p.ApplicationPaymentProviderID
-                          where ppProducts.Contains(o.ApplicationPaymentProviderProductID) 
-                          && p.ContactID == contact
-                          && p.Version == 0
-                          && p.VersionDeletedBy == null
-                          select p).Distinct();
-                var old = from o in pc where o.CustomerReference != customerID select o;
-                foreach (var o in old)
-                    d.ApplicationPaymentProviderContacts.DeleteObject(o);
-                if (!pc.Any(f => f.CustomerReference == customerID))
-                {
-                    var pp = (from o in d.ApplicationPaymentProviderProducts
-                          join p in d.ApplicationPaymentProviders on o.ApplicationPaymentProviderID equals p.ApplicationPaymentProviderID
-                          where ppProducts.Contains(o.ApplicationPaymentProviderProductID) 
-                          && p.Version == 0
-                          && p.VersionDeletedBy == null
-                          select p.ApplicationPaymentProviderID).First();
-                    var c = new ApplicationPaymentProviderContact
-                    {
-                        ApplicationPaymentProviderID = pp,
-                        ApplicationPaymentProviderContactID = Guid.NewGuid(),
-                        CustomerReference = customerID,
-                        ContactID = contact
-                    };
-                    d.ApplicationPaymentProviderContacts.AddObject(c);
-                }
-                d.SaveChanges();
-            }
+            UpdateOrderOwner(order);
         }
          
 
@@ -182,9 +141,158 @@ namespace EXPEDIT.Transactions.Services {
         }
 
 
+        public void GetOrderOwner(ref OrderViewModel order)
+        {
+            var contact = _users.ContactID;
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var ppProducts = order.Products.Where(f => f.PaymentProviderProductID != null).Select(f => f.PaymentProviderProductID.Value).ToArray();
+                order.PaymentCustomerID = (from o in d.ApplicationPaymentProviderProducts
+                                           join p in d.ApplicationPaymentProviderContacts on o.ApplicationPaymentProviderID equals p.ApplicationPaymentProviderID
+                                           where ppProducts.Contains(o.ApplicationPaymentProviderProductID)
+                                           && p.ContactID == contact
+                                           && p.Version == 0
+                                           && p.VersionDeletedBy == null
+                                           && p.CustomerReference != null
+                                           orderby p.CustomerReference descending
+                                           select p.CustomerReference).FirstOrDefault();
+                var m = (from o in d.Addresses
+                         join ca in d.ContactAddresses on o.AddressID equals ca.AddressID
+                         where ca.ContactID == contact && ca.Version==0 && ca.VersionDeletedBy==null && o.Version==0 && o.VersionDeletedBy==null
+                         orderby o.IsBusiness descending
+                         orderby o.Sequence descending
+                         select o).FirstOrDefault();
+                if (m != null)
+                {
+                    order.PaymentStreet = m.Street;
+                    order.PaymentStreetExtended = m.Extended;
+                    order.PaymentLocality = m.City;
+                    order.PaymentRegion = m.State;
+                    order.PaymentPostcode = m.Postcode;
+                }
+            
+                var c = (from o in d.Contacts where o.ContactID == contact select o).FirstOrDefault();
+                if (c != null)
+                {
+                    order.PaymentFirstname = c.Firstname;
+                    order.PaymentLastname = c.Surname;
+                    order.PaymentEmail = c.DefaultEmail;
+                }
+                else
+                {
+                    order.PaymentEmail = _users.Email;
+                }
+                
+            }
+        }
+
+        public void UpdateOrderOwner(OrderViewModel order)
+        {
+            var customerID = order.PaymentCustomerID;
+            var contact = _users.ContactID;
+            var ppProducts = order.Products.Where(f => f.PaymentProviderProductID != null).Select(f => f.PaymentProviderProductID.Value).ToArray();
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                //Update customer id
+                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var pc = (from o in d.ApplicationPaymentProviderProducts
+                          join p in d.ApplicationPaymentProviderContacts on o.ApplicationPaymentProviderID equals p.ApplicationPaymentProviderID
+                          where ppProducts.Contains(o.ApplicationPaymentProviderProductID)
+                          && p.ContactID == contact
+                          && p.Version == 0
+                          && p.VersionDeletedBy == null
+                          select p).Distinct();
+                var old = from o in pc where o.CustomerReference != customerID select o;
+                foreach (var o in old)
+                    d.ApplicationPaymentProviderContacts.DeleteObject(o);
+                if (!string.IsNullOrWhiteSpace(customerID) && !pc.Any(f => f.CustomerReference == customerID))
+                {
+                    var pp = (from o in d.ApplicationPaymentProviderProducts
+                              join p in d.ApplicationPaymentProviders on o.ApplicationPaymentProviderID equals p.ApplicationPaymentProviderID
+                              where ppProducts.Contains(o.ApplicationPaymentProviderProductID)
+                              && p.Version == 0
+                              && p.VersionDeletedBy == null
+                              select p.ApplicationPaymentProviderID).First();
+                    var ppc = new ApplicationPaymentProviderContact
+                    {
+                        ApplicationPaymentProviderID = pp,
+                        ApplicationPaymentProviderContactID = Guid.NewGuid(),
+                        CustomerReference = customerID,
+                        ContactID = contact
+                    };
+                    d.ApplicationPaymentProviderContacts.AddObject(ppc);
+                }
+
+                //d.Addresses.Where(f => f.Version == 0 && f.VersionDeletedBy == null).Update(f => new Address { Sequence = f.Sequence+1 }); 
+                var m = (from o in d.Addresses
+                         join ca in d.ContactAddresses on o.AddressID equals ca.AddressID
+                         where ca.ContactID == contact && ca.Version == 0 && ca.VersionDeletedBy == null && o.Version == 0 && o.VersionDeletedBy == null
+                         orderby o.IsBusiness descending
+                         orderby o.Sequence descending
+                         select o).FirstOrDefault();
+                if (m != null)
+                {
+                    if (m.Street != order.PaymentStreet)
+                        m.Street = order.PaymentStreet;
+                    if (m.Extended != order.PaymentStreetExtended)
+                        m.Extended = order.PaymentStreetExtended;
+                    if (m.City != order.PaymentLocality)
+                        m.City = order.PaymentLocality;
+                    if (m.State != order.PaymentRegion)
+                        m.State = order.PaymentRegion;
+                    if (m.Postcode != order.PaymentPostcode)
+                        m.Postcode = order.PaymentPostcode;
+                    if (m.Email != order.PaymentEmail)
+                        m.Email = order.PaymentEmail;
+                    if (!m.IsBusiness)
+                        m.IsBusiness = true;
+                    if (m.EntityState == System.Data.EntityState.Modified)
+                    {
+                        var max = (from o in d.Addresses
+                                   join ca in d.ContactAddresses on o.AddressID equals ca.AddressID
+                                   where ca.ContactID == contact
+                                   select o.Sequence).Max();
+                        m.Sequence = max + 1;
+                    }
+                }
+                else
+                {
+                    Guid addressID = Guid.NewGuid();
+                    m = new Address { AddressID = addressID };
+                    m.Street = order.PaymentStreet;
+                    m.Extended = order.PaymentStreetExtended;
+                    m.City = order.PaymentLocality;
+                    m.State = order.PaymentRegion;
+                    m.Postcode = order.PaymentPostcode;
+                    m.Email = order.PaymentEmail;
+                    m.IsBusiness = true;
+                    m.Sequence = 0;
+                    d.Addresses.AddObject(m);
+                    d.ContactAddresses.AddObject(
+                        new ContactAddress
+                        {
+                            ContactAddressID = Guid.NewGuid(),
+                            AddressID = addressID,
+                            ContactID = contact
+                        }
+                        );
+
+                    
+                }
+
+                var c = (from o in d.Contacts where o.ContactID == contact select o).Single();
+                if (string.IsNullOrWhiteSpace(c.Firstname))
+                    c.Firstname = order.PaymentFirstname;
+                if (string.IsNullOrWhiteSpace(c.Surname))
+                    c.Surname = order.PaymentLastname;
+
+                d.SaveChanges();
+            }
+        }
+
         public void UpdateOrder(OrderViewModel order)
         {
-            var supplier = _users.CompanyID;
             var application = _users.ApplicationID;
             var contact = _users.ContactID;
             var currentTime = DateTime.UtcNow;
