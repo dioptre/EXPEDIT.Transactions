@@ -444,7 +444,7 @@ namespace EXPEDIT.Transactions.Services {
                                 {
                                     if (mu.UnitID == ConstantsHelper.UNIT_SI_SECONDS) 
                                         nextMaintenance = now.AddSeconds(Convert.ToDouble(supplyItem.QuantityModel.Value));
-                                    else if (mu.EquivalentMultiplierID == ConstantsHelper.UNIT_SI_SECONDS)
+                                    else if (mu.EquivalentUnitID == ConstantsHelper.UNIT_SI_SECONDS)
                                         nextMaintenance = now.AddSeconds(Convert.ToDouble(supplyItem.QuantityModel.Value*mu.EquivalentMultiplier));
                                     else
                                          warnings.Add(string.Format("Product unit description not time based. Could not update maintenance schedule. Order: ({0}) Asset: ({1})", order.OrderID, asset.AssetID));        
@@ -503,8 +503,8 @@ namespace EXPEDIT.Transactions.Services {
                 };
                 pay.PaymentInvoice.Add(payInvoice);
                 //Check invoice amt vs order.PaymentPaid!
-                if (i.Total != order.PaymentPaid)
-                    warnings.Add(string.Format("Discrepency in payment, order: ({0}). Total:{1} & Paid:{2}", order.OrderID, i.Total, order.PaymentPaid));
+                if (i.Total != pay.Amount)
+                    warnings.Add(string.Format("Discrepency in payment, order: ({0}). Total:{1} & Paid:{2}", order.OrderID, i.Total, pay.Amount));
                 else
                     payInvoice.IsFinalPaymentInvoice = true;               
 
@@ -577,7 +577,7 @@ namespace EXPEDIT.Transactions.Services {
                         item.CostPerUnitPart = p.PricePerUnit;
                         item.QuantityPart = p.Units;
                         item.CostPart = item.CostPerUnitPart * item.QuantityPart;
-                        item.TaxPart = item.CostPart * PaymentUtils.TAX_DEFAULT;
+                        item.TaxPart = item.CostPart * ConstantsHelper.TAX_DEFAULT;
                         item.SubtotalPart = item.CostPart + item.TaxPart;
                     }
                     else
@@ -586,7 +586,7 @@ namespace EXPEDIT.Transactions.Services {
                         item.CostPerUnitModel = p.PricePerUnit;
                         item.QuantityModel = p.Units;
                         item.CostModel = item.CostPerUnitModel * item.QuantityModel;
-                        item.TaxModel = item.CostModel * PaymentUtils.TAX_DEFAULT;
+                        item.TaxModel = item.CostModel * ConstantsHelper.TAX_DEFAULT;
                         item.SubtotalModel = item.CostModel + item.TaxModel;
                     }
 
