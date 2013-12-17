@@ -4,7 +4,7 @@ using System.Web.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
+using Newtonsoft.Json;
 namespace EXPEDIT.Transactions.ViewModels
 {
     public class ProductViewModel
@@ -51,8 +51,14 @@ namespace EXPEDIT.Transactions.ViewModels
         public decimal? UnitMinimum { get; set; }
         
         public IEnumerable<ContractConditionViewModel> ContractConditions { get; set; }
+
+        [JsonIgnore]
         [DisplayName("Terms:")]
-        public string ProductTerms { get { return string.Join("\r\n", (from o in ContractConditions select o.ContractText).ToArray()); } }
+        public string ProductTerms
+        {
+            
+            get { return string.Join("\r\n", (from o in ContractConditions select o.ContractText).ToArray()); }
+        }
       
 
     }

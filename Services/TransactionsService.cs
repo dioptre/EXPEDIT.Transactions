@@ -318,10 +318,11 @@ namespace EXPEDIT.Transactions.Services {
                 var d = new XODBC(_users.ApplicationConnectionString, null);
                 PurchaseOrder po = (from o in d.PurchaseOrders where order.OrderID.HasValue && o.PurchaseOrderID == order.OrderID select o).Single();
                 Supply s = (from o in d.Supplies where o.SupplierPurchaseOrderID == po.PurchaseOrderID select o).Single();
-                var first = order.Products.First();
-                Invoice i = new Invoice { 
+                var oldItems = (from o in d.SupplyItems where o.Supply.SupplierPurchaseOrderID == po.PurchaseOrderID select o).ToList();
+                Invoice i = new Invoice
+                { 
                     InvoiceID = GuidHelper.NewComb() ,
-                    CurrencyID = first.CurrencyID,
+                    CurrencyID = oldItems.Any() ? oldItems.First().CurrencyID : default(Guid?),
                     CustomerContactID = contact,
                     CustomerCompanyAddressID = order.PaymentAddressID,
                     Dated = now,
@@ -329,10 +330,9 @@ namespace EXPEDIT.Transactions.Services {
                     CustomerReferenceNumber = order.PaymentCustomerID
                 };
                 d.Invoices.AddObject(i);
-                var oldItems = (from o in d.SupplyItems where o.Supply.SupplierPurchaseOrderID == po.PurchaseOrderID select o).ToList();
                 var ppProducts = order.Products.Where(f => f.PaymentProviderProductID != null).Select(f => f.PaymentProviderProductID.Value).ToArray();
                 var currentConditions = new List<ContractConditionViewModel>();
-                
+                var processedSupplyItems = new List<SupplyItem>();
 
                 foreach (var p in order.Products)
                 {
@@ -356,7 +356,7 @@ namespace EXPEDIT.Transactions.Services {
                         foreach (var supplyItem in items)
                         {
 
-                            oldItems.Remove(supplyItem);
+                            processedSupplyItems.Add(supplyItem);
                             if (i.CurrencyID != supplyItem.CurrencyID)
                                 warnings.Add(string.Format("Disparity in product currencies, order: ({0}) basket product ({1})", order.OrderID, JsonConvert.SerializeObject(p)));                           
 
@@ -439,7 +439,7 @@ namespace EXPEDIT.Transactions.Services {
                                     CurrentContactID = contact
                                 };
                                 d.Assets.AddObject(asset);
-                                DateTime? nextMaintenance = default(DateTime);
+                                DateTime? nextMaintenance = default(DateTime?);
                                 if (mu!=null)
                                 {
                                     if (mu.UnitID == ConstantsHelper.UNIT_SI_SECONDS) 
@@ -465,7 +465,8 @@ namespace EXPEDIT.Transactions.Services {
 
                 }
                 //warning if anything left over
-                foreach (var oldItem in oldItems)
+                var leftOvers = (from o in oldItems where !(from processed in processedSupplyItems select processed.SupplyItemID).Contains(o.SupplyItemID) select o);
+                foreach (var oldItem in leftOvers)
                     warnings.Add(string.Format("Badly processed order ({0}), spurious basket product: ({1})", order.OrderID, JsonConvert.SerializeObject(oldItem)));
 
 
@@ -504,7 +505,7 @@ namespace EXPEDIT.Transactions.Services {
                 pay.PaymentInvoice.Add(payInvoice);
                 //Check invoice amt vs order.PaymentPaid!
                 if (i.Total != pay.Amount)
-                    warnings.Add(string.Format("Discrepency in payment, order: ({0}). Total:{1} & Paid:{2}", order.OrderID, i.Total, pay.Amount));
+                    warnings.Add(string.Format("Discrepancy in payment, order: ({0}). Total:{1} & Paid:{2}", order.OrderID, i.Total, pay.Amount));
                 else
                     payInvoice.IsFinalPaymentInvoice = true;               
 
