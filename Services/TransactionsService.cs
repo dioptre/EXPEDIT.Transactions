@@ -29,6 +29,7 @@ using XODB.Services;
 using Orchard.Media.Services;
 using EXPEDIT.Transactions.Services.Payments;
 using EntityFramework.Extensions;
+using Newtonsoft.Json;
 
 namespace EXPEDIT.Transactions.Services {
     
@@ -118,6 +119,10 @@ namespace EXPEDIT.Transactions.Services {
             }
             _payment.PreparePaymentResult(ref order);
             UpdateOrderOwner(order);
+            if ((order.PaymentStatus & 1) == 1) //Success
+            {
+                UpdateOrderPaid(order);
+            }
         }
          
 
@@ -170,6 +175,9 @@ namespace EXPEDIT.Transactions.Services {
                     order.PaymentLocality = m.City;
                     order.PaymentRegion = m.State;
                     order.PaymentPostcode = m.Postcode;
+                    order.PaymentCountry = m.Country;
+                    order.PaymentPhone = m.Phone;
+                    order.PaymentCompany = m.AddressName;
                 }
             
                 var c = (from o in d.Contacts where o.ContactID == contact select o).FirstOrDefault();
@@ -233,6 +241,10 @@ namespace EXPEDIT.Transactions.Services {
                          select o).FirstOrDefault();
                 if (m != null)
                 {
+                    if (m.AddressName != order.PaymentCompany)
+                        m.AddressName = order.PaymentCompany;
+                    if (m.Phone != order.PaymentPhone)
+                        m.Phone = order.PaymentPhone;
                     if (m.Street != order.PaymentStreet)
                         m.Street = order.PaymentStreet;
                     if (m.Extended != order.PaymentStreetExtended)
@@ -243,6 +255,8 @@ namespace EXPEDIT.Transactions.Services {
                         m.State = order.PaymentRegion;
                     if (m.Postcode != order.PaymentPostcode)
                         m.Postcode = order.PaymentPostcode;
+                    if (m.Country != order.PaymentCountry)
+                        m.Country = order.PaymentCountry;
                     if (m.Email != order.PaymentEmail)
                         m.Email = order.PaymentEmail;
                     if (!m.IsBusiness)
@@ -280,12 +294,222 @@ namespace EXPEDIT.Transactions.Services {
 
                     
                 }
+                order.PaymentAddressID = m.AddressID;
 
                 var c = (from o in d.Contacts where o.ContactID == contact select o).Single();
                 if (string.IsNullOrWhiteSpace(c.Firstname))
                     c.Firstname = order.PaymentFirstname;
                 if (string.IsNullOrWhiteSpace(c.Surname))
                     c.Surname = order.PaymentLastname;
+
+                d.SaveChanges();
+            }
+        }
+
+        public void UpdateOrderPaid(OrderViewModel order)
+        {
+            var customerID = order.PaymentCustomerID;
+            var contact = _users.ContactID;
+            var warnings = new List<string>();
+            var now = DateTime.UtcNow;
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                //Update customer id
+                var d = new XODBC(_users.ApplicationConnectionString, null);
+                PurchaseOrder po = (from o in d.PurchaseOrders where order.OrderID.HasValue && o.PurchaseOrderID == order.OrderID select o).Single();
+                Supply s = (from o in d.Supplies where o.SupplierPurchaseOrderID == po.PurchaseOrderID select o).Single();
+                var first = order.Products.First();
+                Invoice i = new Invoice { 
+                    InvoiceID = GuidHelper.NewComb() ,
+                    CurrencyID = first.CurrencyID,
+                    CustomerContactID = contact,
+                    CustomerCompanyAddressID = order.PaymentAddressID,
+                    Dated = now,
+                    SupplyID = s.SupplyID,
+                    CustomerReferenceNumber = order.PaymentCustomerID
+                };
+                d.Invoices.AddObject(i);
+                var oldItems = (from o in d.SupplyItems where o.Supply.SupplierPurchaseOrderID == po.PurchaseOrderID select o).ToList();
+                var ppProducts = order.Products.Where(f => f.PaymentProviderProductID != null).Select(f => f.PaymentProviderProductID.Value).ToArray();
+                var currentConditions = new List<ContractConditionViewModel>();
+                
+
+                foreach (var p in order.Products)
+                {
+                    //SupplierModel, Model, Part, Count
+                    var items = (from o in oldItems
+                                where
+                                    o.SupplierModelID == p.SupplierModelID
+                                    && o.SupplierPartID == p.SupplierPartID
+                                    && o.ModelID == p.ModelID
+                                    && o.PartID == p.PartID
+                                select o);
+                    if (p.CurrencyID != i.CurrencyID)
+                        warnings.Add(string.Format("Disparity in product currencies, order: ({0}) basket product ({1})", order.OrderID, JsonConvert.SerializeObject(p)));
+                    if (!items.Any())                    
+                        warnings.Add(string.Format("Badly processed order ({0}) missing basket product ({1})" , order.OrderID, JsonConvert.SerializeObject(p)));
+                    else
+                    {
+                        //Could group tegether supplyitems but not doing it
+                        //items.Sum(f => f.QuantityLabour + f.QuantityModel + f.QuantityPart);
+
+                        foreach (var supplyItem in items)
+                        {
+
+                            oldItems.Remove(supplyItem);
+                            if (i.CurrencyID != supplyItem.CurrencyID)
+                                warnings.Add(string.Format("Disparity in product currencies, order: ({0}) basket product ({1})", order.OrderID, JsonConvert.SerializeObject(p)));                           
+
+                            if (supplyItem.SupplierPartID.HasValue && supplyItem.QuantityPart > 0m)
+                            {
+                                InvoiceLine lineItem = new InvoiceLine
+                                {
+                                    InvoiceLineID = Guid.NewGuid(),
+                                    InvoiceID = i.InvoiceID,
+                                    CurrencyID = supplyItem.CurrencyID,
+                                    SupplyItemID = supplyItem.SupplyItemID,
+                                    ReferenceType = d.GetTableName(typeof(SupplierPart)),
+                                    ReferenceID = supplyItem.SupplierPartID,
+                                    Description = (from o in d.SupplierParts where o.SupplierPartID == supplyItem.SupplierPartID select o.Part.StandardPartName).FirstOrDefault(),
+                                    Quantity = supplyItem.QuantityPart,
+                                    Tax = (supplyItem.TaxPart ?? 0m), //TODO: If taxation gets complicated use itemtax table
+                                    OriginalSubtotal = (supplyItem.SubtotalPart ?? 0m),
+                                    Subtotal = (supplyItem.SubtotalPart ?? 0m) //TODO: Discounts
+                                };
+                                i.InvoiceLine.Add(lineItem);
+
+                                //TODO: if we add part as an asset, it should go in assetdata table
+                            }
+
+                            if (supplyItem.QuantityLabour > 0m)
+                            {
+                                InvoiceLine lineItem = new InvoiceLine
+                                {
+                                    InvoiceLineID = Guid.NewGuid(),
+                                    InvoiceID = i.InvoiceID,
+                                    CurrencyID = supplyItem.CurrencyID,
+                                    SupplyItemID = supplyItem.SupplyItemID,
+                                    ReferenceType = ConstantsHelper.REFERENCE_TYPE_LABOUR,
+                                    //ReferenceID = TODO
+                                    Description = "Labour",
+                                    Quantity = supplyItem.QuantityLabour,
+                                    Tax = (supplyItem.TaxLabour ?? 0m), //TODO: If taxation gets complicated use itemtax table
+                                    OriginalSubtotal = (supplyItem.SubtotalLabour ?? 0m),
+                                    Subtotal = (supplyItem.SubtotalLabour ?? 0m) //TODO: Discounts
+                                };
+                                i.InvoiceLine.Add(lineItem);
+
+                            }
+
+                            if (supplyItem.SupplierModelID.HasValue && supplyItem.QuantityModel > 0m) 
+                            {
+                                var mu = supplyItem.UnitModel;
+                                var muString = (mu != null) ? string.Format(" - [{0}]",mu.StandardUnitName) : "";
+
+                                InvoiceLine lineItem = new InvoiceLine
+                                {
+                                    InvoiceLineID = Guid.NewGuid(),
+                                    InvoiceID = i.InvoiceID,
+                                    CurrencyID = supplyItem.CurrencyID,
+                                    SupplyItemID = supplyItem.SupplyItemID,
+                                    ReferenceType = d.GetTableName(typeof(SupplierModel)),
+                                    ReferenceID = supplyItem.SupplierModelID,
+                                    Description = string.Format("{0}{1}", 
+                                        (from o in d.SupplierModels where o.SupplierModelID == supplyItem.SupplierModelID select o.Model.StandardModelName).FirstOrDefault(),
+                                        muString
+                                        ),
+                                    Quantity = supplyItem.QuantityModel,
+                                    Tax = (supplyItem.TaxModel ?? 0m), //TODO: If taxation gets complicated use itemtax table
+                                    OriginalSubtotal = (supplyItem.SubtotalModel ?? 0m),
+                                    Subtotal = (supplyItem.SubtotalModel ?? 0m) //TODO: Discounts
+                                };
+                                i.InvoiceLine.Add(lineItem);
+
+                                //Asset TODO:Check to update old asset
+                                var asset = new Asset
+                                {
+                                    AssetID = Guid.NewGuid(),
+                                    AssetName = lineItem.Description,
+                                    InitialCost = lineItem.Subtotal,
+                                    ProRataCost = supplyItem.CostPerUnitModel,
+                                    ProRataUnitID = supplyItem.ModelUnitID,
+                                    Purchased = now,
+                                    PurchaseOrderID = order.OrderID,
+                                    ModelID = supplyItem.ModelID,
+                                    CurrentContactID = contact
+                                };
+                                d.Assets.AddObject(asset);
+                                DateTime? nextMaintenance = default(DateTime);
+                                if (mu!=null)
+                                {
+                                    if (mu.UnitID == ConstantsHelper.UNIT_SI_SECONDS) 
+                                        nextMaintenance = now.AddSeconds(Convert.ToDouble(supplyItem.QuantityModel.Value));
+                                    else if (mu.EquivalentMultiplierID == ConstantsHelper.UNIT_SI_SECONDS)
+                                        nextMaintenance = now.AddSeconds(Convert.ToDouble(supplyItem.QuantityModel.Value*mu.EquivalentMultiplier));
+                                    else
+                                         warnings.Add(string.Format("Product unit description not time based. Could not update maintenance schedule. Order: ({0}) Asset: ({1})", order.OrderID, asset.AssetID));        
+                                }
+                                var assetMaintenance = new AssetMaintenance
+                                {
+                                    AssetMaintenanceID = Guid.NewGuid(),
+                                    AssetID = asset.AssetID,
+                                    NextDueDateBilling = nextMaintenance
+                                };
+                                asset.AssetMaintenance.Add(assetMaintenance);
+                            }
+                        }
+
+                    }
+
+                   
+
+                }
+                //warning if anything left over
+                foreach (var oldItem in oldItems)
+                    warnings.Add(string.Format("Badly processed order ({0}), spurious basket product: ({1})", order.OrderID, JsonConvert.SerializeObject(oldItem)));
+
+
+                //invoice
+                i.TaxAmount = i.InvoiceLine.Sum(f => f.Tax);
+                i.OriginalTotal = i.InvoiceLine.Sum(f => f.OriginalSubtotal);
+                i.Total = i.InvoiceLine.Sum(f=>f.Subtotal); //Todo: Discounts
+                
+                //supply
+                s.CustomerInvoiceID = i.InvoiceID;
+                s.CustomerApprovedBy = contact;
+                s.IsSupplied = true;
+                s.IsPaid = true; //started payment, finalised=cancelled
+
+                //PurchaseOrder
+                //TODO: update orderstatus
+               
+                //payment
+                var pay = new Payment
+                {
+                    PaymentID = Guid.NewGuid(),
+                    ExternalReferenceName = order.PaymentReference,
+                    CustomerContactID = contact,
+                    OriginalAmount = i.Total,
+                    CurrencyID = i.CurrencyID,
+                    Amount = order.PaymentPaid,
+                    Paid = now
+                };
+                d.Payments.AddObject(pay);
+                //paymentInvoice
+                var payInvoice = new PaymentInvoice
+                {
+                    PaymentID = pay.PaymentID,
+                    InvoiceID = i.InvoiceID
+                };
+                pay.PaymentInvoice.Add(payInvoice);
+                //Check invoice amt vs order.PaymentPaid!
+                if (i.Total != order.PaymentPaid)
+                    warnings.Add(string.Format("Discrepency in payment, order: ({0}). Total:{1} & Paid:{2}", order.OrderID, i.Total, order.PaymentPaid));
+                else
+                    payInvoice.IsFinalPaymentInvoice = true;               
+
+                if (warnings.Count > 0)
+                    _users.WarnAdmins(warnings);
 
                 d.SaveChanges();
             }
@@ -353,7 +577,7 @@ namespace EXPEDIT.Transactions.Services {
                         item.CostPerUnitPart = p.PricePerUnit;
                         item.QuantityPart = p.Units;
                         item.CostPart = item.CostPerUnitPart * item.QuantityPart;
-                        item.TaxPart = item.CostPart * 0.1m;
+                        item.TaxPart = item.CostPart * PaymentUtils.TAX_DEFAULT;
                         item.SubtotalPart = item.CostPart + item.TaxPart;
                     }
                     else
@@ -362,7 +586,7 @@ namespace EXPEDIT.Transactions.Services {
                         item.CostPerUnitModel = p.PricePerUnit;
                         item.QuantityModel = p.Units;
                         item.CostModel = item.CostPerUnitModel * item.QuantityModel;
-                        item.TaxModel = item.CostModel * 0.1m;
+                        item.TaxModel = item.CostModel * PaymentUtils.TAX_DEFAULT;
                         item.SubtotalModel = item.CostModel + item.TaxModel;
                     }
 
@@ -373,8 +597,8 @@ namespace EXPEDIT.Transactions.Services {
                     item.TaxLabour = 0;
                     item.SubtotalLabour = 0;
                     
-                    item.Tax = item.TaxLabour + item.TaxModel + item.TaxPart; //TODO: If taxation gets complicated use itemtax table
-                    item.OriginalSubtotal = item.SubtotalLabour + item.SubtotalModel + item.SubtotalPart;
+                    item.Tax = (item.TaxLabour ?? 0m) + (item.TaxModel ?? 0m) + (item.TaxPart ?? 0m); //TODO: If taxation gets complicated use itemtax table
+                    item.OriginalSubtotal = (item.SubtotalLabour ?? 0m) + (item.SubtotalModel ?? 0m) + (item.SubtotalPart ?? 0m);
                     item.Subtotal = item.OriginalSubtotal; //TODO: Discounting
                     
                 }

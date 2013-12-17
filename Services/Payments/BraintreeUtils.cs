@@ -71,18 +71,21 @@ namespace EXPEDIT.Transactions.Services.Payments
             if (result.IsSuccess())
             {                
                 order.PaymentEmail = result.Target.Email;
+                order.PaymentCompany = result.Target.Company;
+                order.PaymentPhone = result.Target.Phone;
                 order.PaymentFirstname = result.Target.FirstName;
                 order.PaymentLastname = result.Target.LastName;
                 if (result.Target.Addresses != null)
                 {
                     var address = (from o in result.Target.Addresses orderby o.CreatedAt descending select o).FirstOrDefault();
                     if (address != null)
-                    {
+                    {                        
                         order.PaymentStreet = address.StreetAddress;
                         order.PaymentStreetExtended = address.ExtendedAddress;
                         order.PaymentLocality = address.Locality;
                         order.PaymentRegion = address.Region;
                         order.PaymentPostcode = address.PostalCode;
+                        order.PaymentCountry = address.CountryName;
                     }
                 }
                 order.PaymentCustomerID = result.Target.Id;
@@ -109,6 +112,7 @@ namespace EXPEDIT.Transactions.Services.Payments
                 throw new NotSupportedException("Only Subscription Products and Services Supported"); //TODO: Support once offs
             foreach (var p in order.Products)
             {                
+                //TODO Support non-subscriptions
                 var SubscriptionRequest = new SubscriptionRequest
                 {
                     PaymentMethodToken = PaymentMethodToken,
@@ -120,6 +124,8 @@ namespace EXPEDIT.Transactions.Services.Payments
                 {
                     order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Subscribed | (uint)PaymentUtils.PaymentStatus.Success;
                     order.PaymentResponse = result.Target.Status.ToString();
+                    order.PaymentPaid = result.Target.Price;
+                    order.PaymentReference = result.Subscription.Id;
                     p.Paid = true;
                 }
                 else

@@ -21,7 +21,7 @@ namespace EXPEDIT.Transactions.Services.Payments
             BadCustomerID = 0x10000,
             BadPayment = 0x10001,
         }
-
+        
 
     }
 }

@@ -11,10 +11,16 @@ namespace EXPEDIT.Transactions.Helpers
         public static Guid DEVICE_TYPE_SOFTWARE = new Guid("3f526009-827a-41b0-a633-14b422bdf27f");
         public static Guid ROUTE_TYPE_STORE_INTERNAL = new Guid("1a01fc89-c014-433f-be04-39c2f956aeb2");
         public static Guid ROUTE_TYPE_STORE_EXTERNAL = new Guid("7c9f3a25-011b-4f5e-8b1e-d345da13f8b1");
+        public static Guid UNIT_SI_SECONDS = new Guid("5AF72C77-A76E-4234-A16E-3F7898799EEA"); 
         public static int SQL_MAX_INT = 2147483647;
         public static string STAT_NAME_DOWNLOADS = "Downloads";
         public static string STAT_NAME_CLICKS_BUY = "ClicksBuy";
         public static string STAT_NAME_CLICKS_CONFIRM = "ClicksConfirm";
         public static string METADATA_ANTIFORGERY = "E_ANTIFORGERY";
+        public static string REFERENCE_TYPE_LABOUR = "E_LABOUR";
+        public const decimal GST_AU = 0.1m;
+        public static decimal TAX_DEFAULT = GST_AU;
+
+
     }
 }

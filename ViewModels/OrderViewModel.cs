@@ -22,17 +22,23 @@ namespace EXPEDIT.Transactions.ViewModels
         public string PaymentCustomerID { get; set; }
         public string PaymentFirstname { get; set; }
         public string PaymentLastname { get; set; }
+        public string PaymentPhone { get; set; }
+        public string PaymentCompany { get; set; }
         public string PaymentEmail { get; set; }
         public string PaymentStreet { get; set; }
         public string PaymentStreetExtended { get; set; }
         public string PaymentLocality { get; set; }
         public string PaymentRegion { get; set; }
         public string PaymentPostcode { get; set; }
+        public string PaymentCountry { get; set; }
         public string PaymentNumber { get; set; }
         public string PaymentExpirationMonth { get; set; }
         public string PaymentExpirationYear { get; set; }
         public string PaymentVerification { get; set; }
         public Guid? PaymentAntiForgeryKey { get; set; }
+        public decimal? PaymentPaid { get; set; }
+        public Guid? PaymentAddressID { get; set; }
+        public string PaymentReference { get; set; }
 
         public SelectList TransactionType { get; set; }
 
