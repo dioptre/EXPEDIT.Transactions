@@ -324,7 +324,7 @@ namespace EXPEDIT.Transactions.Services {
                     InvoiceID = GuidHelper.NewComb() ,
                     CurrencyID = oldItems.Any() ? oldItems.First().CurrencyID : default(Guid?),
                     CustomerContactID = contact,
-                    CustomerCompanyAddressID = order.PaymentAddressID,
+                    CustomerAddressID = order.PaymentAddressID,
                     Dated = now,
                     SupplyID = s.SupplyID,
                     CustomerReferenceNumber = order.PaymentCustomerID
