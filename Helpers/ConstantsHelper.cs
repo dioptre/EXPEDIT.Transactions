@@ -20,7 +20,7 @@ namespace EXPEDIT.Transactions.Helpers
         public static string REFERENCE_TYPE_LABOUR = "E_LABOUR";
         public const decimal GST_AU = 0.1m;
         public static decimal TAX_DEFAULT = GST_AU;
-
+        public static string LICENSE_SERVER_AUTH_METHOD = "Simple";
 
     }
 }

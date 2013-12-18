@@ -4,12 +4,12 @@
     HtmlHelper.ClientValidationEnabled = true;
     HtmlHelper.UnobtrusiveJavaScriptEnabled = true;
     Layout.Title = T("Payment Result").ToString();
+    bool paid = (Model.PaymentStatus & 0x1) == 0x1;
 }
-@Html.AntiForgeryToken()
-<h1>Transaction @((Model.PaymentStatus & 0x1) == 0x1 ? "Completed" : "Failed")</h1>
-<h2>Download Details:</h2>
-<ul>
-    <li>Invoice</li>
-    <li>Download Software</li>
-    <li>User Guide</li>
-</ul>
+<h1>Transaction @(paid ? "Completed" : "Failed")</h1>
+@if (paid) {
+    @Html.Partial("Paid", Model)
+}
+else {
+    <p>Please check your details and @Html.ActionLink("try again later.", "Confirm", new { area = "EXPEDIT.Transactions", controller = "User", id = Model.OrderID })</p>
+}

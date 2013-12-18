@@ -176,6 +176,7 @@
     <Content Include="Styles\Web.config" />
     <Content Include="Properties\AssemblyInfo.cs" />
     <Content Include="Module.txt" />
+    <Content Include="Views\User\Paid.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\..\..\..\eodb\src\main\XODB.Module.BusinessObjects\XODB.Module.BusinessObjects.csproj">

@@ -45,8 +45,19 @@ namespace EXPEDIT.Transactions.Services.Payments
         public void PreparePayment(ref OrderViewModel order)
         {
             if (!order.OrderID.HasValue)
-                throw new NotSupportedException("Can't make an order without an order ID");            
-            order.PaymentRedirectURL = gateway.TransparentRedirect.Url;            
+                throw new NotSupportedException("Can't make an order without an order ID");
+            string token = null;
+            if (!string.IsNullOrWhiteSpace(order.PaymentCustomerID))
+            {
+                try
+                {
+                    Customer customer = gateway.Customer.Find(order.PaymentCustomerID);
+                    if (customer != null && customer.CreditCards != null && customer.CreditCards.Length > 0)
+                        token = customer.CreditCards[0].Token;
+                }
+                catch { }
+            }
+            order.PaymentRedirectURL = gateway.TransparentRedirect.Url;
             order.PaymentData = gateway.TrData(
                 new CustomerRequest
                 {
@@ -56,7 +67,15 @@ namespace EXPEDIT.Transactions.Services.Payments
                         Options = new CreditCardOptionsRequest()
                         {
                             MakeDefault = true,
-                            VerifyCard = true
+                            VerifyCard = true,
+                            UpdateExistingToken = token
+                        },
+                        BillingAddress = new CreditCardAddressRequest
+                        {
+                            Options = new CreditCardAddressOptionsRequest
+                            {
+                                UpdateExisting = true
+                            }
                         }
                     }
                 }
@@ -66,36 +85,43 @@ namespace EXPEDIT.Transactions.Services.Payments
 
         public void PreparePaymentResult(ref OrderViewModel order)
         {
-
-            Result<Customer> result = gateway.TransparentRedirect.ConfirmCustomer(order.PaymentQuery);
-            if (result.IsSuccess())
-            {                
-                order.PaymentEmail = result.Target.Email;
-                order.PaymentCompany = result.Target.Company;
-                order.PaymentPhone = result.Target.Phone;
-                order.PaymentFirstname = result.Target.FirstName;
-                order.PaymentLastname = result.Target.LastName;
-                if (result.Target.Addresses != null)
+            try
+            {
+                Result<Customer> result = gateway.TransparentRedirect.ConfirmCustomer(order.PaymentQuery);
+                if (result.IsSuccess())
                 {
-                    var address = (from o in result.Target.Addresses orderby o.CreatedAt descending select o).FirstOrDefault();
-                    if (address != null)
-                    {                        
-                        order.PaymentStreet = address.StreetAddress;
-                        order.PaymentStreetExtended = address.ExtendedAddress;
-                        order.PaymentLocality = address.Locality;
-                        order.PaymentRegion = address.Region;
-                        order.PaymentPostcode = address.PostalCode;
-                        order.PaymentCountry = address.CountryName;
+                    order.PaymentEmail = result.Target.Email;
+                    order.PaymentCompany = result.Target.Company;
+                    order.PaymentPhone = result.Target.Phone;
+                    order.PaymentFirstname = result.Target.FirstName;
+                    order.PaymentLastname = result.Target.LastName;
+                    if (result.Target.Addresses != null)
+                    {
+                        var address = (from o in result.Target.Addresses orderby o.CreatedAt descending select o).FirstOrDefault();
+                        if (address != null)
+                        {
+                            order.PaymentStreet = address.StreetAddress;
+                            order.PaymentStreetExtended = address.ExtendedAddress;
+                            order.PaymentLocality = address.Locality;
+                            order.PaymentRegion = address.Region;
+                            order.PaymentPostcode = address.PostalCode;
+                            order.PaymentCountry = address.CountryName;
+                        }
                     }
+                    order.PaymentCustomerID = result.Target.Id;
+                    order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.ReceivedCustomer | (uint)PaymentUtils.PaymentStatus.Success;
                 }
-                order.PaymentCustomerID = result.Target.Id;
-                order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.ReceivedCustomer | (uint)PaymentUtils.PaymentStatus.Success;
+                else
+                {
+                    order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Error;
+                    order.PaymentError = (uint)PaymentUtils.PaymentError.BadCustomerID;
+                    order.PaymentQueryResponse = string.Join(", ", result.Errors.DeepAll());
+                }
             }
-            else
+            catch
             {
                 order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Error;
                 order.PaymentError = (uint)PaymentUtils.PaymentError.BadCustomerID;
-                order.PaymentQueryResponse = string.Join(", ", result.Errors.DeepAll());
             }
 
         }
@@ -125,7 +151,7 @@ namespace EXPEDIT.Transactions.Services.Payments
                     order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Subscribed | (uint)PaymentUtils.PaymentStatus.Success;
                     order.PaymentResponse = result.Target.Status.ToString();
                     order.PaymentPaid = result.Target.Price;
-                    order.PaymentReference = result.Subscription.Id;
+                    order.PaymentReference = result.Target.Id;
                     p.Paid = true;
                 }
                 else

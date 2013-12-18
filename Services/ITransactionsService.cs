@@ -30,10 +30,19 @@ namespace EXPEDIT.Transactions.Services
          void GetOrderOwner(ref OrderViewModel order);
 
          [OperationContract]
+         bool GetOrderPaid(Guid orderID);
+
+         [OperationContract]
+         bool GetOrderProcessed(Guid orderID);
+
+         [OperationContract]
          void UpdateOrder(OrderViewModel order);
 
          [OperationContract]
          void UpdateOrderOwner(OrderViewModel order);
+
+         [OperationContract]
+         void UpdateOrderPaid(OrderViewModel order);
 
          [OperationContract]
          IEnumerable<ProductViewModel> GetProducts(string text = null, Guid? supplierModelID = null, int? startRowIndex = null, int? pageSize = null);

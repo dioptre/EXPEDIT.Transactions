@@ -53,7 +53,7 @@ namespace EXPEDIT.Transactions.Controllers
             var modelID = new Guid(@ref);
             Transactions.IncrementBuyCounter(supplierModelID, modelID);
             var p = new OrderProductViewModel(Transactions.GetProduct(supplierModelID)) { Units = 1, ContractConditions = Transactions.GetContractConditions(new Guid[] { supplierModelID, modelID }) };
-            var m = new OrderViewModel() { OrderID = Guid.NewGuid(), Products = new OrderProductViewModel[] { p } };
+            var m = new OrderViewModel() { OrderID = Guid.NewGuid(), Products = new OrderProductViewModel[] { p } }; //TODO Update existing order before creating a new one
             Transactions.UpdateOrder(m);
             return View(m);
         }
@@ -61,7 +61,10 @@ namespace EXPEDIT.Transactions.Controllers
         [Authorize]
         public ActionResult Confirm(string id)
         {
-            var m = Transactions.GetOrder(new Guid(id));
+            Guid orderID = new Guid(id);
+            if (Transactions.GetOrderProcessed(orderID))
+                return RedirectToAction("Paid", new { area = "EXPEDIT.Transactions", controller = "User", id = id });
+            var m = Transactions.GetOrder(orderID);
             Transactions.GetOrderOwner(ref m);
             Transactions.PreparePayment(ref m);      
             return View(m);
@@ -70,14 +73,32 @@ namespace EXPEDIT.Transactions.Controllers
         [Authorize]
         public ActionResult PaymentResult(string id, string @ref)
         {
-            var m = Transactions.GetOrder(new Guid(id));
+            Guid orderID = new Guid(id);
+            if (Transactions.GetOrderProcessed(orderID))
+                return RedirectToAction("Paid", new { area = "EXPEDIT.Transactions", controller = "User", id = id });
+            var m = Transactions.GetOrder(orderID);
             m.PaymentAntiForgeryKey = new Guid(@ref);
             m.PaymentQuery = Request.Url.Query;
             Transactions.PreparePaymentResult(ref m);
             if (m.PaymentStatus > 0)
-            {                
+            {
+                Transactions.UpdateOrderOwner(m);
                 Transactions.MakePayment(ref m);
+                if ((m.PaymentStatus & 1) == 1) //Success
+                {
+                    Transactions.UpdateOrderPaid(m);
+                }
             }
+            return View(m);
+        }
+
+        [Authorize]
+        public ActionResult Paid(string id)
+        {
+            Guid orderID = new Guid(id);
+            if (!Transactions.GetOrderPaid(orderID))
+                return new HttpUnauthorizedResult("Unauthorized access to unpaid order.");
+            var m = Transactions.GetOrder(orderID);
             return View(m);
         }
       

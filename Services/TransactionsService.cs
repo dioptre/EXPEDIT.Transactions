@@ -84,7 +84,7 @@ namespace EXPEDIT.Transactions.Services {
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new XODBC(_users.ApplicationConnectionString, null);
-                var contracts = (from o in d.SupplyContractConditions where o.Supply.SupplierPurchaseOrderID == orderID && o.Version == 0 && o.VersionDeletedBy == null
+                var contracts = (from o in d.SupplyContractConditions where o.Supply.CustomerPurchaseOrderID == orderID && o.Version == 0 && o.VersionDeletedBy == null
                              select o);
                 foreach (var c in contracts)
                 {
@@ -103,6 +103,7 @@ namespace EXPEDIT.Transactions.Services {
         public void PreparePaymentResult(ref OrderViewModel order)
         {
             var orderID = string.Format("{0}", order.OrderID.Value);
+            var contactID = _users.ContactID;
             var antiForgeryKey = order.PaymentAntiForgeryKey;
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
@@ -118,11 +119,16 @@ namespace EXPEDIT.Transactions.Services {
                 d.SaveChanges();
             }
             _payment.PreparePaymentResult(ref order);
-            UpdateOrderOwner(order);
-            if ((order.PaymentStatus & 1) == 1) //Success
+            if (order.PaymentError == (uint)PaymentUtils.PaymentError.BadCustomerID)
             {
-                UpdateOrderPaid(order);
+                //Force Update Contact on Server Side
+                using (new TransactionScope(TransactionScopeOption.Suppress))
+                {
+                    var d = new XODBC(_users.ApplicationConnectionString, null);
+                    d.ApplicationPaymentProviderContacts.Where(f => f.ContactID == contactID).Delete();
+                }
             }
+
         }
          
 
@@ -131,7 +137,7 @@ namespace EXPEDIT.Transactions.Services {
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new XODBC(_users.ApplicationConnectionString, null);
-                var items = (from o in d.SupplyItems where o.Supply.SupplierPurchaseOrderID==orderID && o.Version==0 && o.VersionDeletedBy == null 
+                var items = (from o in d.SupplyItems where o.Supply.CustomerPurchaseOrderID==orderID && o.Version==0 && o.VersionDeletedBy == null 
                              select new OrderProductViewModel { 
                                  SupplierModelID = o.SupplierModelID, 
                                  SupplierPartID = o.SupplierPartID,
@@ -145,6 +151,31 @@ namespace EXPEDIT.Transactions.Services {
             }
         }
 
+        public bool GetOrderPaid(Guid orderID)
+        {
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new XODBC(_users.ApplicationConnectionString, null);
+                return (from po in d.PurchaseOrders where po.PurchaseOrderID==orderID
+                 join s in d.Supplies on po.PurchaseOrderID equals s.CustomerPurchaseOrderID
+                 join i in d.PaymentInvoices on s.CustomerInvoiceID equals i.InvoiceID
+                 where i.IsFinalPaymentInvoice == true
+                 select po.PurchaseOrderID).Any();
+            }
+        }
+
+        public bool GetOrderProcessed(Guid orderID)
+        {
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new XODBC(_users.ApplicationConnectionString, null);
+                return (from po in d.PurchaseOrders
+                        where po.PurchaseOrderID == orderID
+                        join s in d.Supplies on po.PurchaseOrderID equals s.CustomerPurchaseOrderID
+                        join i in d.PaymentInvoices on s.CustomerInvoiceID equals i.InvoiceID
+                        select po.PurchaseOrderID).Any();
+            }
+        }
 
         public void GetOrderOwner(ref OrderViewModel order)
         {
@@ -308,6 +339,7 @@ namespace EXPEDIT.Transactions.Services {
 
         public void UpdateOrderPaid(OrderViewModel order)
         {
+            var application = _users.ApplicationID;
             var customerID = order.PaymentCustomerID;
             var contact = _users.ContactID;
             var warnings = new List<string>();
@@ -316,9 +348,10 @@ namespace EXPEDIT.Transactions.Services {
             {
                 //Update customer id
                 var d = new XODBC(_users.ApplicationConnectionString, null);
+                //var transaction = d.BeginTransaction(System.Data.IsolationLevel.ReadCommitted); //TODO implement transactions
                 PurchaseOrder po = (from o in d.PurchaseOrders where order.OrderID.HasValue && o.PurchaseOrderID == order.OrderID select o).Single();
-                Supply s = (from o in d.Supplies where o.SupplierPurchaseOrderID == po.PurchaseOrderID select o).Single();
-                var oldItems = (from o in d.SupplyItems where o.Supply.SupplierPurchaseOrderID == po.PurchaseOrderID select o).ToList();
+                Supply s = (from o in d.Supplies where o.CustomerPurchaseOrderID == po.PurchaseOrderID select o).Single();
+                var oldItems = (from o in d.SupplyItems.Include("UnitModel") where o.Supply.CustomerPurchaseOrderID == po.PurchaseOrderID select o).ToList();
                 Invoice i = new Invoice
                 { 
                     InvoiceID = GuidHelper.NewComb() ,
@@ -332,7 +365,7 @@ namespace EXPEDIT.Transactions.Services {
                 d.Invoices.AddObject(i);
                 var ppProducts = order.Products.Where(f => f.PaymentProviderProductID != null).Select(f => f.PaymentProviderProductID.Value).ToArray();
                 var currentConditions = new List<ContractConditionViewModel>();
-                var processedSupplyItems = new List<SupplyItem>();
+                var processedSupplyItems = new List<SupplyItem>();                
 
                 foreach (var p in order.Products)
                 {
@@ -344,7 +377,7 @@ namespace EXPEDIT.Transactions.Services {
                                     && o.ModelID == p.ModelID
                                     && o.PartID == p.PartID
                                 select o);
-                    if (p.CurrencyID != i.CurrencyID)
+                    if (p.CurrencyID != null && p.CurrencyID != i.CurrencyID)
                         warnings.Add(string.Format("Disparity in product currencies, order: ({0}) basket product ({1})", order.OrderID, JsonConvert.SerializeObject(p)));
                     if (!items.Any())                    
                         warnings.Add(string.Format("Badly processed order ({0}) missing basket product ({1})" , order.OrderID, JsonConvert.SerializeObject(p)));
@@ -379,6 +412,7 @@ namespace EXPEDIT.Transactions.Services {
                                 i.InvoiceLine.Add(lineItem);
 
                                 //TODO: if we add part as an asset, it should go in assetdata table
+                                //TODO: if we add part, should add as license to licenseasset
                             }
 
                             if (supplyItem.QuantityLabour > 0m)
@@ -401,11 +435,11 @@ namespace EXPEDIT.Transactions.Services {
 
                             }
 
-                            if (supplyItem.SupplierModelID.HasValue && supplyItem.QuantityModel > 0m) 
+                            if (supplyItem.SupplierModelID.HasValue && supplyItem.QuantityModel > 0m)
                             {
                                 var mu = supplyItem.UnitModel;
-                                var muString = (mu != null) ? string.Format(" - [{0}]",mu.StandardUnitName) : "";
-
+                                var muString = (mu != null) ? string.Format(" - [{0}]", mu.StandardUnitName).ToUpper() : "";
+                                var mn = (from o in d.SupplierModels where o.SupplierModelID == supplyItem.SupplierModelID select o.Model.StandardModelName).FirstOrDefault();
                                 InvoiceLine lineItem = new InvoiceLine
                                 {
                                     InvoiceLineID = Guid.NewGuid(),
@@ -414,8 +448,8 @@ namespace EXPEDIT.Transactions.Services {
                                     SupplyItemID = supplyItem.SupplyItemID,
                                     ReferenceType = d.GetTableName(typeof(SupplierModel)),
                                     ReferenceID = supplyItem.SupplierModelID,
-                                    Description = string.Format("{0}{1}", 
-                                        (from o in d.SupplierModels where o.SupplierModelID == supplyItem.SupplierModelID select o.Model.StandardModelName).FirstOrDefault(),
+                                    Description = string.Format("{0}{1}",
+                                        mn,
                                         muString
                                         ),
                                     Quantity = supplyItem.QuantityModel,
@@ -426,10 +460,11 @@ namespace EXPEDIT.Transactions.Services {
                                 i.InvoiceLine.Add(lineItem);
 
                                 //Asset TODO:Check to update old asset
+                                var assetID = Guid.NewGuid();
                                 var asset = new Asset
                                 {
-                                    AssetID = Guid.NewGuid(),
-                                    AssetName = lineItem.Description,
+                                    AssetID = assetID,
+                                    AssetName = string.Format("{0} [{1}]", string.Join(null, mn.Take(60 - 42)), assetID),
                                     InitialCost = lineItem.Subtotal,
                                     ProRataCost = supplyItem.CostPerUnitModel,
                                     ProRataUnitID = supplyItem.ModelUnitID,
@@ -440,14 +475,14 @@ namespace EXPEDIT.Transactions.Services {
                                 };
                                 d.Assets.AddObject(asset);
                                 DateTime? nextMaintenance = default(DateTime?);
-                                if (mu!=null)
+                                if (mu != null)
                                 {
-                                    if (mu.UnitID == ConstantsHelper.UNIT_SI_SECONDS) 
+                                    if (mu.UnitID == ConstantsHelper.UNIT_SI_SECONDS)
                                         nextMaintenance = now.AddSeconds(Convert.ToDouble(supplyItem.QuantityModel.Value));
                                     else if (mu.EquivalentUnitID == ConstantsHelper.UNIT_SI_SECONDS)
-                                        nextMaintenance = now.AddSeconds(Convert.ToDouble(supplyItem.QuantityModel.Value*mu.EquivalentMultiplier));
+                                        nextMaintenance = now.AddSeconds(Convert.ToDouble(supplyItem.QuantityModel.Value * mu.EquivalentMultiplier));
                                     else
-                                         warnings.Add(string.Format("Product unit description not time based. Could not update maintenance schedule. Order: ({0}) Asset: ({1})", order.OrderID, asset.AssetID));        
+                                        warnings.Add(string.Format("Product unit description not time based. Could not update maintenance schedule. Order: ({0}) Asset: ({1})", order.OrderID, asset.AssetID));
                                 }
                                 var assetMaintenance = new AssetMaintenance
                                 {
@@ -456,6 +491,29 @@ namespace EXPEDIT.Transactions.Services {
                                     NextDueDateBilling = nextMaintenance
                                 };
                                 asset.AssetMaintenance.Add(assetMaintenance);
+                                var license = new License
+                                {
+                                    LicenseID = Guid.NewGuid(),
+                                    LicenseeGUID = contact,
+                                    ContactID = contact,
+                                    ValidForUnitID = supplyItem.ModelUnitID,
+                                    ValidForDuration = supplyItem.QuantityModel,
+                                    ValidFrom = now,
+                                    Expiry = nextMaintenance,
+                                    SupportExpiry = nextMaintenance,
+                                    ApplicationID = application,
+                                    ServiceAuthorisationMethod = ConstantsHelper.LICENSE_SERVER_AUTH_METHOD
+                                };
+                                d.Licenses.AddObject(license);
+                                var licenseAsset = new LicenseAsset
+                                {
+                                    LicenseAssetID = Guid.NewGuid(),
+                                    LicenseID = license.LicenseID,
+                                    AssetID = asset.AssetID,
+                                    ModelID = supplyItem.ModelID
+                                };
+                                d.LicenseAssets.AddObject(licenseAsset);
+
                             }
                         }
 
@@ -505,9 +563,31 @@ namespace EXPEDIT.Transactions.Services {
                 pay.PaymentInvoice.Add(payInvoice);
                 //Check invoice amt vs order.PaymentPaid!
                 if (i.Total != pay.Amount)
+                {
                     warnings.Add(string.Format("Discrepancy in payment, order: ({0}). Total:{1} & Paid:{2}", order.OrderID, i.Total, pay.Amount));
+                }
+                if (pay.Amount >= i.Total)
+                {
+                    payInvoice.IsFinalPaymentInvoice = true;
+                    //TODO:Create Downloads
+                }
                 else
-                    payInvoice.IsFinalPaymentInvoice = true;               
+                {
+                    //Remove licenses issued
+                    var licenseAssetss = d.ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Added).Where(f => f.Entity.GetType() == typeof(LicenseAsset)).Select(f => (LicenseAsset)f.Entity);
+                    foreach (var o in licenseAssetss)
+                        d.LicenseAssets.DeleteObject(o);
+                    var licenses = d.ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Added).Where(f => f.Entity.GetType() == typeof(License)).Select(f => (License)f.Entity);
+                    foreach (var o in licenses)
+                        d.Licenses.DeleteObject(o);
+                    //Remove assets
+                    var assets = d.ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Added).Where(f => f.Entity.GetType() == typeof(Asset)).Select(f => (Asset)f.Entity);
+                    foreach (var o in assets)
+                        d.Assets.DeleteObject(o);
+                    var assetMaintenances = d.ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Added).Where(f => f.Entity.GetType() == typeof(AssetMaintenance)).Select(f => (AssetMaintenance)f.Entity);
+                    foreach (var o in assetMaintenances)
+                        d.AssetMaintenances.DeleteObject(o);
+                }
 
                 if (warnings.Count > 0)
                     _users.WarnAdmins(warnings);
@@ -534,14 +614,14 @@ namespace EXPEDIT.Transactions.Services {
                     d.PurchaseOrders.AddObject(po);
                 }
                 //Supply
-                Supply s = (from o in d.Supplies where o.SupplierPurchaseOrderID == po.PurchaseOrderID select o).SingleOrDefault();
+                Supply s = (from o in d.Supplies where o.CustomerPurchaseOrderID == po.PurchaseOrderID select o).SingleOrDefault();
                 if (s == null)
                 {
-                    s = new Supply { SupplyID = Guid.NewGuid(), SupplierPurchaseOrderID = po.PurchaseOrderID, DateOrdered = currentTime};
+                    s = new Supply { SupplyID = Guid.NewGuid(), CustomerPurchaseOrderID = po.PurchaseOrderID, DateOrdered = currentTime};
                     d.Supplies.AddObject(s);
                 }
                 //SupplyItem
-                var oldItems = (from o in d.SupplyItems where o.Supply.SupplierPurchaseOrderID == po.PurchaseOrderID select o).ToList();
+                var oldItems = (from o in d.SupplyItems where o.Supply.CustomerPurchaseOrderID == po.PurchaseOrderID select o).ToList();
                 var currentConditions = new List<ContractConditionViewModel>();
                 foreach (var p in order.Products)
                 {
