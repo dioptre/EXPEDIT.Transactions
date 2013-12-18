@@ -514,6 +514,37 @@ namespace EXPEDIT.Transactions.Services {
                                 };
                                 d.LicenseAssets.AddObject(licenseAsset);
 
+                                var m = (from o in d.DictionaryModels where o.ModelID==supplyItem.ModelID select o).FirstOrDefault();
+                                if (m != null)
+                                {
+                                    if (m.UserGuideFileDataID.HasValue)
+                                        d.Downloads.AddObject(new Download
+                                        {
+                                            DownloadID = Guid.NewGuid(),
+                                            FileAllocated = now,
+                                            FilterContactID = contact,
+                                            RemainingDownloads = ConstantsHelper.DOWNLOADS_REMAINING_DEFAULT,
+                                            FileDataID = m.UserGuideFileDataID.Value,
+                                            LicenseID = license.LicenseID,
+                                            LicenseAssetID = licenseAsset.LicenseAssetID,
+                                            ValidFrom = now,
+                                            ValidUntil = nextMaintenance
+                                        });
+                                    if (m.SecureFileDataID.HasValue)
+                                        d.Downloads.AddObject(new Download
+                                        {
+                                            DownloadID = Guid.NewGuid(),
+                                            FileAllocated = now,
+                                            FilterContactID = contact,
+                                            RemainingDownloads = ConstantsHelper.DOWNLOADS_REMAINING_DEFAULT,
+                                            FileDataID = m.SecureFileDataID.Value,
+                                            LicenseID = license.LicenseID,
+                                            LicenseAssetID = licenseAsset.LicenseAssetID,
+                                            ValidFrom = now,
+                                            ValidUntil = nextMaintenance
+                                        });
+                                }
+
                             }
                         }
 
@@ -569,10 +600,13 @@ namespace EXPEDIT.Transactions.Services {
                 if (pay.Amount >= i.Total)
                 {
                     payInvoice.IsFinalPaymentInvoice = true;
-                    //TODO:Create Downloads
                 }
                 else
                 {
+                    //Remove downloads issued
+                    var downloads = d.ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Added).Where(f => f.Entity.GetType() == typeof(Download)).Select(f => (Download)f.Entity);
+                    foreach (var o in downloads)
+                        d.Downloads.DeleteObject(o);
                     //Remove licenses issued
                     var licenseAssetss = d.ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Added).Where(f => f.Entity.GetType() == typeof(LicenseAsset)).Select(f => (LicenseAsset)f.Entity);
                     foreach (var o in licenseAssetss)

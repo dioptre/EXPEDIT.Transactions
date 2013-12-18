@@ -21,6 +21,13 @@ namespace EXPEDIT.Transactions.Helpers
         public const decimal GST_AU = 0.1m;
         public static decimal TAX_DEFAULT = GST_AU;
         public static string LICENSE_SERVER_AUTH_METHOD = "Simple";
+        public static int DOWNLOADS_REMAINING_DEFAULT = 10;
+        public static Guid FILE_TYPE_EXTERNAL= new Guid("a7d379b3-b4fe-40a1-bebd-19e3d61f3477");
+        public static Guid FILE_TYPE_USER_GUIDE= new Guid("5f14ae60-6ca3-46e7-973e-1fb45e7b7362");
+        public static Guid FILE_TYPE_SOFTWARE= new Guid("b2df1ccc-cd61-4d80-859a-40dd06b10e63");
+        public static Guid FILE_TYPE_GLOBAL= new Guid("3e3ebe72-3a3d-4ad5-946b-52befb8b483f");
+        public static Guid FILE_TYPE_INVOICE= new Guid("26c6a363-1a75-4530-ad44-cd18a47b69f1");
+        public static Guid FILE_TYPE_INTERNAL= new Guid("b8491f60-8ab2-444d-8d88-e0a34cddeafe");
 
     }
 }
