@@ -367,8 +367,8 @@ namespace EXPEDIT.Transactions.Services {
                 d.Invoices.AddObject(i);
                 var ppProducts = order.Products.Where(f => f.PaymentProviderProductID != null).Select(f => f.PaymentProviderProductID.Value).ToArray();
                 var currentConditions = new List<ContractConditionViewModel>();
-                var processedSupplyItems = new List<SupplyItem>();                
-
+                var processedSupplyItems = new List<SupplyItem>();
+                var sequence = 0;
                 foreach (var p in order.Products)
                 {
                     //SupplierModel, Model, Part, Count
@@ -409,9 +409,11 @@ namespace EXPEDIT.Transactions.Services {
                                     Quantity = supplyItem.QuantityPart,
                                     Tax = (supplyItem.TaxPart ?? 0m), //TODO: If taxation gets complicated use itemtax table
                                     OriginalSubtotal = (supplyItem.CostPart ?? 0m),
-                                    Subtotal = (supplyItem.SubtotalPart ?? 0m) //TODO: Discounts
+                                    Subtotal = (supplyItem.SubtotalPart ?? 0m), //TODO: Discounts
+                                    Sequence = sequence
                                 };
                                 i.InvoiceLine.Add(lineItem);
+                                sequence++;
 
                                 //TODO: if we add part as an asset, it should go in assetdata table
                                 //TODO: if we add part, should add as license to licenseasset
