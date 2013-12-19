@@ -87,6 +87,7 @@ namespace EXPEDIT.Transactions.Controllers
                 if ((m.PaymentStatus & 1) == 1) //Success
                 {
                     Transactions.UpdateOrderPaid(m);
+                    m.Downloads = Transactions.GetDownloads(orderID);
                 }
             }
             return View(m);
@@ -99,6 +100,7 @@ namespace EXPEDIT.Transactions.Controllers
             if (!Transactions.GetOrderPaid(orderID))
                 return new HttpUnauthorizedResult("Unauthorized access to unpaid order.");
             var m = Transactions.GetOrder(orderID);
+            m.Downloads = Transactions.GetDownloads(orderID);
             return View(m);
         }
       

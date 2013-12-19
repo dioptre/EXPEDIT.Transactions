@@ -1,0 +1,16 @@
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using System.Web.Mvc;
+using System;
+using System.Collections.Generic;
+
+namespace EXPEDIT.Transactions.ViewModels
+{
+    public class DownloadViewModel
+    {
+        
+        public Guid DownloadID { get; set; }
+        public string Description { get; set; }
+
+    }
+}

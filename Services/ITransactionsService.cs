@@ -45,6 +45,9 @@ namespace EXPEDIT.Transactions.Services
          void UpdateOrderPaid(OrderViewModel order);
 
          [OperationContract]
+         IEnumerable<DownloadViewModel> GetDownloads(Guid orderID);
+
+         [OperationContract]
          IEnumerable<ProductViewModel> GetProducts(string text = null, Guid? supplierModelID = null, int? startRowIndex = null, int? pageSize = null);
 
          [OperationContract]

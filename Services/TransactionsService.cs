@@ -24,12 +24,12 @@ using XODB.Module.BusinessObjects;
 using EXPEDIT.Utils.DAL.Models;
 #endif
 using EXPEDIT.Transactions.ViewModels;
-using EXPEDIT.Transactions.Helpers;
 using XODB.Services;
 using Orchard.Media.Services;
 using EXPEDIT.Transactions.Services.Payments;
 using EntityFramework.Extensions;
 using Newtonsoft.Json;
+using EXPEDIT.Share.Helpers;
 
 namespace EXPEDIT.Transactions.Services {
     
@@ -158,8 +158,9 @@ namespace EXPEDIT.Transactions.Services {
                 var d = new XODBC(_users.ApplicationConnectionString, null);
                 return (from po in d.PurchaseOrders where po.PurchaseOrderID==orderID
                  join s in d.Supplies on po.PurchaseOrderID equals s.CustomerPurchaseOrderID
-                 join i in d.PaymentInvoices on s.CustomerInvoiceID equals i.InvoiceID
-                 where i.IsFinalPaymentInvoice == true
+                 join i in d.Invoices on s.SupplyID equals i.SupplyID
+                 join pi in d.PaymentInvoices on i.InvoiceID equals pi.InvoiceID
+                 where pi.IsFinalPaymentInvoice == true
                  select po.PurchaseOrderID).Any();
             }
         }
@@ -172,7 +173,8 @@ namespace EXPEDIT.Transactions.Services {
                 return (from po in d.PurchaseOrders
                         where po.PurchaseOrderID == orderID
                         join s in d.Supplies on po.PurchaseOrderID equals s.CustomerPurchaseOrderID
-                        join i in d.PaymentInvoices on s.CustomerInvoiceID equals i.InvoiceID
+                        join i in d.Invoices on s.SupplyID equals i.SupplyID
+                        join pi in d.PaymentInvoices on i.InvoiceID equals pi.InvoiceID
                         select po.PurchaseOrderID).Any();
             }
         }
@@ -406,7 +408,7 @@ namespace EXPEDIT.Transactions.Services {
                                     Description = (from o in d.SupplierParts where o.SupplierPartID == supplyItem.SupplierPartID select o.Part.StandardPartName).FirstOrDefault(),
                                     Quantity = supplyItem.QuantityPart,
                                     Tax = (supplyItem.TaxPart ?? 0m), //TODO: If taxation gets complicated use itemtax table
-                                    OriginalSubtotal = (supplyItem.SubtotalPart ?? 0m),
+                                    OriginalSubtotal = (supplyItem.CostPart ?? 0m),
                                     Subtotal = (supplyItem.SubtotalPart ?? 0m) //TODO: Discounts
                                 };
                                 i.InvoiceLine.Add(lineItem);
@@ -428,7 +430,7 @@ namespace EXPEDIT.Transactions.Services {
                                     Description = "Labour",
                                     Quantity = supplyItem.QuantityLabour,
                                     Tax = (supplyItem.TaxLabour ?? 0m), //TODO: If taxation gets complicated use itemtax table
-                                    OriginalSubtotal = (supplyItem.SubtotalLabour ?? 0m),
+                                    OriginalSubtotal = (supplyItem.CostLabour ?? 0m),
                                     Subtotal = (supplyItem.SubtotalLabour ?? 0m) //TODO: Discounts
                                 };
                                 i.InvoiceLine.Add(lineItem);
@@ -454,7 +456,7 @@ namespace EXPEDIT.Transactions.Services {
                                         ),
                                     Quantity = supplyItem.QuantityModel,
                                     Tax = (supplyItem.TaxModel ?? 0m), //TODO: If taxation gets complicated use itemtax table
-                                    OriginalSubtotal = (supplyItem.SubtotalModel ?? 0m),
+                                    OriginalSubtotal = (supplyItem.CostModel ?? 0m),
                                     Subtotal = (supplyItem.SubtotalModel ?? 0m) //TODO: Discounts
                                 };
                                 i.InvoiceLine.Add(lineItem);
@@ -565,7 +567,6 @@ namespace EXPEDIT.Transactions.Services {
                 i.Total = i.InvoiceLine.Sum(f=>f.Subtotal); //Todo: Discounts
                 
                 //supply
-                s.CustomerInvoiceID = i.InvoiceID;
                 s.CustomerApprovedBy = contact;
                 s.IsSupplied = true;
                 s.IsPaid = true; //started payment, finalised=cancelled
@@ -713,8 +714,8 @@ namespace EXPEDIT.Transactions.Services {
                     item.SubtotalLabour = 0;
                     
                     item.Tax = (item.TaxLabour ?? 0m) + (item.TaxModel ?? 0m) + (item.TaxPart ?? 0m); //TODO: If taxation gets complicated use itemtax table
-                    item.OriginalSubtotal = (item.SubtotalLabour ?? 0m) + (item.SubtotalModel ?? 0m) + (item.SubtotalPart ?? 0m);
-                    item.Subtotal = item.OriginalSubtotal; //TODO: Discounting
+                    item.OriginalSubtotal = (item.CostLabour ?? 0m) + (item.CostModel ?? 0m) + (item.CostPart ?? 0m);
+                    item.Subtotal = (item.SubtotalLabour ?? 0m) + (item.SubtotalModel ?? 0m) + (item.SubtotalPart ?? 0m); ; //TODO: Discounting
                     
                 }
                 //Clear removed items
@@ -761,6 +762,22 @@ namespace EXPEDIT.Transactions.Services {
 
                 d.SaveChanges();
 
+            }
+        }
+
+        public IEnumerable<DownloadViewModel> GetDownloads(Guid orderID)
+        {
+            var contact = _users.ContactID;
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new XODBC(_users.ApplicationConnectionString, null);
+                return (from o in d.E_SP_GetDownloads(orderID, contact)
+                        select new DownloadViewModel
+                        {
+                            DownloadID = o.DownloadID,
+                            Description = o.Description
+                        }
+                        ).ToArray();
             }
         }
 

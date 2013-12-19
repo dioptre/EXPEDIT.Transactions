@@ -39,6 +39,7 @@ namespace EXPEDIT.Transactions.ViewModels
         public decimal? PaymentPaid { get; set; }
         public Guid? PaymentAddressID { get; set; }
         public string PaymentReference { get; set; }
+        public IEnumerable<DownloadViewModel> Downloads { get; set; }
 
         public SelectList TransactionType { get; set; }
 

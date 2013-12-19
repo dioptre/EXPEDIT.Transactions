@@ -191,6 +191,10 @@
       <Project>{9916839C-39FC-4CEB-A5AF-89CA7E87119F}</Project>
       <Name>Orchard.Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\EXPEDIT.Share\EXPEDIT.Share.csproj">
+      <Project>{224cf035-3491-449e-8dcb-d26797ea10e9}</Project>
+      <Name>EXPEDIT.Share</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Orchard.Media\Orchard.Media.csproj">
       <Project>{d9a7b330-cd22-4da1-a95a-8de1982ad8eb}</Project>
       <Name>Orchard.Media</Name>
@@ -202,8 +206,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controllers\UserController.cs" />
-    <Compile Include="Helpers\ConstantsHelper.cs" />
-    <Compile Include="Helpers\GuidHelper.cs" />
     <Compile Include="ResourceManifest.cs" />
     <Compile Include="Route.cs" />
     <Compile Include="Services\ITransactionsService.cs" />
@@ -213,12 +215,14 @@
     <Compile Include="Services\Payments\PaymentUtils.cs" />
     <Compile Include="Services\TransactionsService.cs" />
     <Compile Include="ViewModels\ContractConditionViewModel.cs" />
+    <Compile Include="ViewModels\DownloadViewModel.cs" />
     <Compile Include="ViewModels\OrderProductViewModel.cs" />
     <Compile Include="ViewModels\ProductsViewModel.cs" />
     <Compile Include="ViewModels\OrderViewModel.cs" />
     <Compile Include="ViewModels\ProductViewModel.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Helpers\" />
     <Folder Include="Models\" />
   </ItemGroup>
   <ItemGroup>

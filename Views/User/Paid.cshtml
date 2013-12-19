@@ -1,7 +1,8 @@
 ﻿@model EXPEDIT.Transactions.ViewModels.OrderViewModel
 <h2>Download Details:</h2>
 <ul>
-    <li><a href="/share/getinvoice/@Model.OrderID">Download Invoice</a></li>
-    <li>Download Software</li>
-    <li>User Guide</li>
+    <li><a href="/share/getorderinvoice/@Model.OrderID">Download Invoice</a></li>
+    @foreach (var m in Model.Downloads) {
+        <li><a href="/share/download/@m.DownloadID">Download @m.Description</a></li>
+    }
 </ul>
