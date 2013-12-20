@@ -27,7 +27,8 @@ namespace EXPEDIT.Transactions.Services.Payments
                 PublicKey = "59mqjnsyqypw6dpc",
                 PrivateKey = "3478eedc910a0d4793a8d472571851df",
                 ClientPublicKey = @"MIIBCgKCAQEAwvQwIlEDkcHNpNfeIDQHIMvhZ/zb6y01QgVRXXbitzxSra5M+5zffgp1fT4vdIseuj435+SuYRmIQU4cHzK18BvZahCuyaOGV6eZIaOhsNTUd2vcSaTud96mxDmbeKfW3Gd2HqugH3RiwL5DpickR3hM6dlaArQBgcZlnpI4qAIVKbPePXk9Nj1aJ7mZOJWuqdwtAY7TkC7zc0lmFQWxZXQsmNSSUf+SY7OpA9mZX0KNs7HN4W0eQyqhQzjrJrrWrlCEWKaJlURZaDQ8fVrIU2Km99O8/yW3/TurCQDHThXFeFPBrul2SQ6ejQHpv93BN1bAiEVqjnr+FqdEA99mgwIDAQAB",
-                ServerReturnURL = string.Format("{0}/store/user/PaymentResult", orchardServices.WorkContext.CurrentSite.BaseUrl)
+                ServerReturnURL = string.Format("{0}://{1}/store/user/PaymentResult", orchardServices.WorkContext.HttpContext.Request.Url.Scheme, orchardServices.WorkContext.HttpContext.Request.Url.Host)
+
             };
             _merchant = merchant.ActLike<IMerchant>();
             if (gateway == null)

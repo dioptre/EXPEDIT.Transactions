@@ -103,6 +103,58 @@ namespace EXPEDIT.Transactions.Controllers
             m.Downloads = Transactions.GetDownloads(orderID);
             return View(m);
         }
+
+        [Authorize]
+        public ActionResult PartnerAgreement(string id)
+        {
+            //Show agreement
+            return View();
+        }
+
+        [Authorize]
+        [HttpPost]
+        public ActionResult PartnerAgreement(string id)
+        {
+            //Save agreement
+            return View();
+        }
+
+
+        [Authorize]
+        public ActionResult SubmitSoftware(string id)
+        {
+            //Show form
+            return View();
+        }
+
+        [Authorize]
+        [HttpPost]
+        public ActionResult SubmitSoftware(string id)
+        {
+            //Save form
+            return View();
+        }
+
+
+        [Authorize]
+        public ActionResult MyApps(string id)
+        {
+            //Show form [purchased sw, services, products, partner status]
+            return View();
+        }
+
+        [HttpPost]
+        public ActionResult TwoStepAuthenticationDeliveryReceipt(string id)
+        {
+            //msgid  Unique SMSGlobal Message ID  
+            //dlrstatus  The status of the delivery for SMS. 
+            //dlr_err  The error code. 
+            //donedate  
+
+            return View();
+        }
+       
+
       
     }
 

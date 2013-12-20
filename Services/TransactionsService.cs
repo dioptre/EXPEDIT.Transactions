@@ -786,7 +786,7 @@ namespace EXPEDIT.Transactions.Services {
 
         public IEnumerable<ProductViewModel> GetProducts(string text = null, Guid? supplierModelID = null, int? startRowIndex = null, int? pageSize=null)
         {
-            var supplier = _users.CompanyID;
+            var supplier = _users.ApplicationCompanyID;
             var application = _users.ApplicationID;
             var directory = _media.GetPublicUrl(@"EXPEDIT.Transactions");
             using (new TransactionScope(TransactionScopeOption.Suppress))
@@ -842,7 +842,7 @@ namespace EXPEDIT.Transactions.Services {
 
         public IEnumerable<ContractConditionViewModel> GetContractConditions(Guid[] referenceIDs)
         {
-            var supplier = _users.CompanyID;
+            var supplier = _users.ApplicationCompanyID;
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new XODBC(_users.ApplicationConnectionString, null);
