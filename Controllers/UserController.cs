@@ -105,7 +105,7 @@ namespace EXPEDIT.Transactions.Controllers
         }
 
         [Authorize]
-        public ActionResult PartnerAgreement(string id)
+        public ActionResult PartnerAgreement()
         {
             //Show agreement
             return View();
@@ -119,9 +119,22 @@ namespace EXPEDIT.Transactions.Controllers
             return View();
         }
 
+        [HttpPost]
+        public ActionResult PartnerAgreementReceipt(string id)
+        {
+            //Verify "Accept" to agreement
+            //msgid  Unique SMSGlobal Message ID  
+            //dlrstatus  The status of the delivery for SMS. 
+            //dlr_err  The error code. 
+            //donedate  
+
+            return View();
+        }
+       
+
 
         [Authorize]
-        public ActionResult SubmitSoftware(string id)
+        public ActionResult SubmitSoftware()
         {
             //Show form
             return View();
@@ -146,6 +159,7 @@ namespace EXPEDIT.Transactions.Controllers
         [HttpPost]
         public ActionResult TwoStepAuthenticationDeliveryReceipt(string id)
         {
+            //Verify Address using Mobile
             //msgid  Unique SMSGlobal Message ID  
             //dlrstatus  The status of the delivery for SMS. 
             //dlr_err  The error code. 
@@ -153,7 +167,8 @@ namespace EXPEDIT.Transactions.Controllers
 
             return View();
         }
-       
+
+      
 
       
     }

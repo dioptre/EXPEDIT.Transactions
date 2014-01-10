@@ -177,6 +177,10 @@
     <Content Include="Properties\AssemblyInfo.cs" />
     <Content Include="Module.txt" />
     <Content Include="Views\User\Paid.cshtml" />
+    <Content Include="Views\User\MyApps.cshtml" />
+    <Content Include="Views\User\PartnerAgreement.cshtml" />
+    <Content Include="Views\User\SubmitSoftware.cshtml" />
+    <Content Include="Views\User\TwoStepAuthenticationDeliveryReceipt.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\..\..\..\eodb\src\main\XODB.Module.BusinessObjects\XODB.Module.BusinessObjects.csproj">
