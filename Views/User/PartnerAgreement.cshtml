@@ -1,11 +1,13 @@
 ﻿@model EXPEDIT.Transactions.ViewModels.PartnerViewModel
-
+@Html.Partial("Header")
 @{
     Style.Require("Transactions");
     HtmlHelper.ClientValidationEnabled = true;
     HtmlHelper.UnobtrusiveJavaScriptEnabled = true;
     Layout.Title = T("Partner Agreement").ToString();
 }
+@using (Html.BeginForm("PartnerAgreement", "User", new { area = "EXPEDIT.Transactions" }, FormMethod.Post, new { id = "form1", @class = "form" }))
+{
 @Html.AntiForgeryToken()
 <fieldset>
     <legend>Agreement....</legend>
@@ -22,5 +24,33 @@
         @Html.TextBoxFor(m => m.Mobile, new { Style = "float: left;display: inline;" })&nbsp;@Html.Partial("Verify", Model)
     </div>
     @Html.HiddenFor(m => m.TwoStepID)
-    <input id="btnPartnerAgreementAgreed" type="submit" value="Agree to Terms" disabled/>
+    <input id="btnPartnerAgreementAgreed" type="submit" value="Agree to Terms" style="display:none;" disabled/>
 </fieldset>
+}
+<script type="text/javascript">
+        // just for the demos, avoids form submit
+        jQuery.validator.setDefaults({
+            debug: false,
+            success: "valid"
+        });
+        $("#form1").validate({
+            errorPlacement: function (error, element) {
+                error.insertBefore(element);
+            },
+            rules: {
+                "Mobile" : {
+                        required: true,
+                },
+                "Firstname": {
+                    required: true,
+                },
+                "Lastname": {
+                    required: true,
+                }
+            },
+            submitHandler: function(form) {
+                form.submit();
+            }            
+        });
+        $("#form1").valid()
+</script>

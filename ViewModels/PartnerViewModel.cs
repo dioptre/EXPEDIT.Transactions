@@ -11,8 +11,11 @@ namespace EXPEDIT.Transactions.ViewModels
 
         public Guid ContractID { get; set; }
         public Guid ContactID { get; set; }
+        [Required]
         public string Firstname { get; set; }
+        [Required]
         public string Lastname { get; set; }
+        [Required]
         public string Mobile { get; set; }
         public Guid TwoStepID { get; set; }
 

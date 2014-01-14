@@ -10,7 +10,7 @@
              url: '@Url.Action("Verify", "User", new { area = "EXPEDIT.Transactions", id=string.Format("{0}", Model.VerificationID) })',
              data: { __RequestVerificationToken: token, jsonRequest: JSON.stringify({ Mobile: $('#Mobile').val() }) },
              context: document.body,
-             success: function () { document.getElementById("btnPartnerAgreementAgreed").disabled = false; },
+             success: function () { document.getElementById("btnPartnerAgreementAgreed").disabled = false; $("#btnPartnerAgreementAgreed").css("display", "block"); },
              error: function () { alert('Error Verifying Mobile'); }
          });
 
