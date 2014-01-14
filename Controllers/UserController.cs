@@ -6,6 +6,12 @@ using System;
 using System.Linq;
 using EXPEDIT.Transactions.Services;
 using EXPEDIT.Transactions.ViewModels;
+using Newtonsoft.Json;
+using XODB.Models;
+using System.Dynamic;
+using ImpromptuInterface;
+using ImpromptuInterface.Dynamic;
+using XODB.Helpers;
 
 namespace EXPEDIT.Transactions.Controllers
 {
@@ -108,16 +114,10 @@ namespace EXPEDIT.Transactions.Controllers
         public ActionResult PartnerAgreement()
         {
             //Show agreement
-            return View();
+            var m = new PartnerViewModel { VerificationID = Guid.NewGuid() };
+            return View(m);
         }
 
-        [Authorize]
-        [HttpPost]
-        public ActionResult PartnerAgreement(string id)
-        {
-            //Save agreement
-            return View();
-        }
 
         [HttpPost]
         public ActionResult PartnerAgreementReceipt(string id)
@@ -131,6 +131,15 @@ namespace EXPEDIT.Transactions.Controllers
             return View();
         }
        
+
+        [Authorize]
+        [HttpPost]
+        public ActionResult PartnerAgreement(string id)
+        {
+            //Save agreement
+            return View();
+        }
+
 
 
         [Authorize]
@@ -150,25 +159,22 @@ namespace EXPEDIT.Transactions.Controllers
 
 
         [Authorize]
-        public ActionResult MyApps(string id)
+        public ActionResult MyAccount(string id)
         {
-            //Show form [purchased sw, services, products, partner status]
+            //Show form [purchased sw, services, products, partner status, tickets, contracts]
             return View();
         }
 
         [HttpPost]
-        public ActionResult TwoStepAuthenticationDeliveryReceipt(string id)
+        [Authorize]
+        public ActionResult Verify(string id, string jsonRequest)
         {
-            //Verify Address using Mobile
-            //msgid  Unique SMSGlobal Message ID  
-            //dlrstatus  The status of the delivery for SMS. 
-            //dlr_err  The error code. 
-            //donedate  
-
-            return View();
+            var verify = JsonConvert.DeserializeObject<ExpandoObject>(jsonRequest).ActLike<IVerifyMobile>();
+            verify.Sent = DateTime.Now;   
+            return new JsonHelper.JsonNetResult(verify, JsonRequestBehavior.AllowGet);            
         }
 
-      
+        
 
       
     }

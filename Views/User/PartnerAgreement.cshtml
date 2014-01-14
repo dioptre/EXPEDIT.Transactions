@@ -1,15 +1,26 @@
-﻿@model EXPEDIT.Transactions.ViewModels.OrderProductViewModel
-<tr>
-<td><img src="@Model.Thumbnail" alt="" style="padding: 4px; line-height: 19.5px; border: 1px solid #ddd;" width="60" height="60"></td>
-<td>
-<h2>@Model.Title <small>@Model.Subtitle</small></h2>
-<p>@Model.HTML</p>
-    <p>@Html.LabelFor(f=>f.Units)</p>
-    <p>@Html.TextBoxFor(f => f.Units, new { @readonly = true })</p>
-    <p>@Html.LabelFor(f=>f.CostText)</p>
-    <p>@Html.TextBoxFor(f => f.CostText, new { @readonly = true })</p>
-    <p>@Html.LabelFor(f => f.ProductTerms)</p>
-    <p>@Html.TextAreaFor(f=> f.ProductTerms, 7, 70, new {@readonly=true})</p>
-<br>
-</td>
-</tr>
+﻿@model EXPEDIT.Transactions.ViewModels.PartnerViewModel
+
+@{
+    Style.Require("Transactions");
+    HtmlHelper.ClientValidationEnabled = true;
+    HtmlHelper.UnobtrusiveJavaScriptEnabled = true;
+    Layout.Title = T("Partner Agreement").ToString();
+}
+@Html.AntiForgeryToken()
+<fieldset>
+    <legend>Agreement....</legend>
+    <div class="editor-label">
+        @Html.LabelFor(m => m.ContractID)
+    </div>
+    <div class="editor-field">
+        @Html.TextBoxFor(m => m.Firstname)
+    </div>
+    <div class="editor-label">
+        @Html.TextBoxFor(m => m.Lastname)
+    </div>
+    <div class="editor-label">
+        @Html.TextBoxFor(m => m.Mobile, new { Style = "float: left;display: inline;" })&nbsp;@Html.Partial("Verify", Model)
+    </div>
+    @Html.HiddenFor(m => m.TwoStepID)
+    <input id="btnPartnerAgreementAgreed" type="submit" value="Agree to Terms" disabled/>
+</fieldset>

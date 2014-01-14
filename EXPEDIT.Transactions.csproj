@@ -177,10 +177,10 @@
     <Content Include="Properties\AssemblyInfo.cs" />
     <Content Include="Module.txt" />
     <Content Include="Views\User\Paid.cshtml" />
-    <Content Include="Views\User\MyApps.cshtml" />
+    <Content Include="Views\User\MyAccount.cshtml" />
     <Content Include="Views\User\PartnerAgreement.cshtml" />
     <Content Include="Views\User\SubmitSoftware.cshtml" />
-    <Content Include="Views\User\TwoStepAuthenticationDeliveryReceipt.cshtml" />
+    <Content Include="Views\User\Verify.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\..\..\..\eodb\src\main\XODB.Module.BusinessObjects\XODB.Module.BusinessObjects.csproj">
@@ -219,6 +219,7 @@
     <Compile Include="Services\Payments\PaymentUtils.cs" />
     <Compile Include="Services\TransactionsService.cs" />
     <Compile Include="ViewModels\ContractConditionViewModel.cs" />
+    <Compile Include="ViewModels\PartnerViewModel.cs" />
     <Compile Include="ViewModels\DownloadViewModel.cs" />
     <Compile Include="ViewModels\OrderProductViewModel.cs" />
     <Compile Include="ViewModels\ProductsViewModel.cs" />
