@@ -5,7 +5,7 @@
     Style.Require("Transactions");
     HtmlHelper.ClientValidationEnabled = true;
     HtmlHelper.UnobtrusiveJavaScriptEnabled = true;
-    Layout.Title = T("Test").ToString();
+    Layout.Title = T("Confirm Order").ToString();
 }
 
 @*@using (Html.BeginFormAntiForgeryPost(Url.Action(string.Format("{0}", ViewData["TransparentRedirectUrl"]), "User", new { area = "EXPEDIT.Transactions", Controller = "User", Action = "Index" }), FormMethod.Post, new { id = "payment-form", @class = "payment-form" }))*@

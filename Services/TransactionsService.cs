@@ -32,6 +32,8 @@ using Newtonsoft.Json;
 using EXPEDIT.Share.Helpers;
 using XODB.Helpers;
 using XODB.Models;
+using RestSharp;
+using System.Security.Cryptography;
 
 namespace EXPEDIT.Transactions.Services {
     
@@ -963,23 +965,65 @@ namespace EXPEDIT.Transactions.Services {
             }
         }
 
-        public void UpdatePartnership(PartnerViewModel m)
+        public bool UpdatePartnership(PartnerViewModel m, string IPAddress)
         {
             var contact = _users.GetContact(_users.Username);
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new XODBC(_users.ApplicationConnectionString, null);
-                var original = (from o in d.Contracts where o.ContractID == ConstantsHelper.CONTRACT_PARTNER && o.VersionDeletedBy == null && o.Version == 0 select o).Single(); //TODO fix static reference
-
+                var twoStep = (from o in d.TwoStepAuthenticationDatas where o.TwoStepAuthenticationDataID == m.VerificationID && o.VersionDeletedBy == null && o.Version == 0 select o).Single();
+                if (m.VerificationCode != twoStep.VerificationCode || string.IsNullOrWhiteSpace(twoStep.VerificationCode))
+                    return false;
+                twoStep.Verified = DateTime.UtcNow;
+                twoStep.RequestedByIP = IPAddress;
+                var contract = (from o in d.Contracts where o.ContractID == m.ContractID && o.VersionDeletedBy == null && o.Version == 0 select o).Single();
+                contract.Started = DateTime.UtcNow;
+                d.SaveChanges();
+                return true;
             }
         }
 
-        public bool VerifyTwoStepAuthentication(ref IVerifyMobile verification)
+
+        public bool SendTwoStepAuthentication(ref IVerifyMobile verify)
         {
-             var contact = _users.GetContact(_users.Username);
+            //First check mobile
+            if (string.IsNullOrWhiteSpace(verify.Mobile))
+                return false;
+            verify.Mobile = verify.Mobile.Replace(" ","");
+            if (!verify.Mobile.IsMobile())
+                return false;
+                    
              using (new TransactionScope(TransactionScopeOption.Suppress))
              {
+                 var twoStepID = verify.VerificationID;
                  var d = new XODBC(_users.ApplicationConnectionString, null);
+                 var twoStep = (from o in d.TwoStepAuthenticationDatas where o.TwoStepAuthenticationDataID == twoStepID && o.VersionDeletedBy == null && o.Version == 0 select o).Single();
+                 var client = new RestClient("https://api.smsglobal.com");
+                 //System.Net.ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
+                 // client.Authenticator = new HttpBasicAuthenticator(username, password);
+                 var request = new RestRequest("/v1/sms/", Method.POST);
+                 var id = "80d249a9eecc9232fb6ed0f843e7f230";
+                 var secret = "6239e342d7abb35c853ad33e65931f64";
+                 var timestamp = string.Format("{0}", DateHelper.NowToUnixTimestamp());
+                 var nonce = Guid.NewGuid().ToString().Replace("-", "").Substring(0, 32);
+                 string hash = null;
+                 using (HMACSHA256 hmac = new HMACSHA256(Convert.FromBase64String(secret)))
+                     hash = Convert.ToBase64String(hmac.ComputeHash(System.Text.Encoding.ASCII.GetBytes(string.Format("{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n\n", timestamp, nonce, "POST", "/v1/sms/", "api.smsglobal.com", "443", null))));
+                 client.Authenticator = new OAuth2AuthorizationRequestHeaderAuthenticator(string.Format("id=\"{0}\", ts=\"{1}\", nonce=\"{2}\", mac=\"{3}\"", id, timestamp, nonce, hash), "MAC");
+                 client.PreAuthenticate = true;
+                 request.AddParameter("origin", "61400970789");
+                 var destination = verify.Mobile.Replace("+","");
+                 request.AddParameter("destination", destination);
+                 request.AddParameter("message", string.Format("Your MiningAppStore code is {0}", twoStep.VerificationCode));
+                 //IRestResponse<Person> response2 = client.Execute<Person>(request);
+                 IRestResponse response = client.Execute(request);
+                 if (response.StatusCode != System.Net.HttpStatusCode.Created)
+                     return false;
+                 twoStep.Sent = DateTime.UtcNow;
+                 twoStep.Mobile = destination;
+                 twoStep.Contact.DefaultMobile = verify.Mobile;
+                 d.SaveChanges();
+
              }
              return false;
 

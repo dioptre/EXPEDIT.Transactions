@@ -37,6 +37,7 @@
         @Html.TextBoxFor(m => m.VerificationCode, new { Style = "float: inherit;display: none;" })
     </div>
     @Html.HiddenFor(m => m.VerificationID)
+    @Html.HiddenFor(m => m.ContractID)
     <input id="btnPartnerAgreementAgreed" type="submit" value="Agree to Terms" style="display:none;" disabled/>
 </fieldset>
 }

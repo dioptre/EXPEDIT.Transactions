@@ -16,7 +16,10 @@ namespace EXPEDIT.Transactions.Services
          PartnerViewModel GetPartnership(Guid? contractID = default(Guid?));
 
          [OperationContract]
-         bool VerifyTwoStepAuthentication(ref IVerifyMobile verification);
+         bool UpdatePartnership(PartnerViewModel m, string IPAddress);
+
+         [OperationContract]
+         bool SendTwoStepAuthentication(ref IVerifyMobile verification);
 
          [OperationContract]
          void MakePayment(ref OrderViewModel order);

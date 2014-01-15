@@ -68,6 +68,9 @@
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\..\..\..\lib\newtonsoft.json\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="RestSharp">
+      <HintPath>..\..\..\..\lib\restsharp\RestSharp.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.ComponentModel.DataAnnotations">
@@ -158,18 +161,37 @@
     <Content Include="LICENSE.TXT" />
     <None Include="Scripts\jquery.validate-vsdoc.js" />
     <None Include="Scripts\jquery-1.6.4-vsdoc.js" />
+    <Content Include="Scripts\canvas-to-blob.min.js" />
     <Content Include="Scripts\jquery-1.6.4.js" />
     <Content Include="Scripts\jquery-1.6.4.min.js" />
     <Content Include="Scripts\jquery-ui-1.10.3.js" />
     <Content Include="Scripts\jquery-ui-1.10.3.min.js" />
+    <Content Include="Scripts\jquery.blueimp-gallery.min.js" />
+    <Content Include="Scripts\jquery.fileupload-audio.js" />
+    <Content Include="Scripts\jquery.fileupload-image.js" />
+    <Content Include="Scripts\jquery.fileupload-process.js" />
+    <Content Include="Scripts\jquery.fileupload-ui.js" />
+    <Content Include="Scripts\jquery.fileupload-validate.js" />
+    <Content Include="Scripts\jquery.fileupload-video.js" />
+    <Content Include="Scripts\jquery.fileupload.js" />
+    <Content Include="Scripts\jquery.iframe-transport.js" />
     <Content Include="Scripts\jquery.validate.additional-methods.js" />
     <Content Include="Scripts\jquery.validate.js" />
     <Content Include="Scripts\jquery.validate.min.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.min.js" />
+    <Content Include="Scripts\load-image.min.js" />
+    <Content Include="Scripts\tmpl.min.js" />
+    <Content Include="Styles\blueimp-gallery.min.css" />
+    <Content Include="Styles\bootstrap.min.css" />
     <Content Include="Styles\expedit-transactions.css" />
+    <Content Include="Styles\fonts\glyphicons-halflings-regular.svg" />
     <Content Include="Styles\images\checked.gif" />
     <Content Include="Styles\images\unchecked.gif" />
+    <Content Include="Styles\jquery.fileupload-noscript.css" />
+    <Content Include="Styles\jquery.fileupload-ui-noscript.css" />
+    <Content Include="Styles\jquery.fileupload-ui.css" />
+    <Content Include="Styles\jquery.fileupload.css" />
     <Content Include="Web.config" />
     <Content Include="Views\Web.config" />
     <Content Include="Scripts\Web.config" />
@@ -181,6 +203,9 @@
     <Content Include="Views\User\PartnerAgreement.cshtml" />
     <Content Include="Views\User\SubmitSoftware.cshtml" />
     <Content Include="Views\User\Verify.cshtml" />
+    <Content Include="Styles\fonts\glyphicons-halflings-regular.eot" />
+    <Content Include="Styles\fonts\glyphicons-halflings-regular.ttf" />
+    <Content Include="Styles\fonts\glyphicons-halflings-regular.woff" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\..\..\..\eodb\src\main\XODB.Module.BusinessObjects\XODB.Module.BusinessObjects.csproj">
@@ -219,6 +244,7 @@
     <Compile Include="Services\Payments\PaymentUtils.cs" />
     <Compile Include="Services\TransactionsService.cs" />
     <Compile Include="ViewModels\ContractConditionViewModel.cs" />
+    <Compile Include="ViewModels\SoftwareSubmissionViewModel.cs" />
     <Compile Include="ViewModels\PartnerViewModel.cs" />
     <Compile Include="ViewModels\DownloadViewModel.cs" />
     <Compile Include="ViewModels\OrderProductViewModel.cs" />

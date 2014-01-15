@@ -12,6 +12,7 @@ using System.Dynamic;
 using ImpromptuInterface;
 using ImpromptuInterface.Dynamic;
 using XODB.Helpers;
+using System.Web;
 
 namespace EXPEDIT.Transactions.Controllers
 {
@@ -116,29 +117,60 @@ namespace EXPEDIT.Transactions.Controllers
             //Show agreement            
             return View(Transactions.GetPartnership());
         }
-
-
-        [HttpPost]
-        public ActionResult PartnerAgreementReceipt(string id)
-        {
-            //Verify "Accept" to agreement
-            //msgid  Unique SMSGlobal Message ID  
-            //dlrstatus  The status of the delivery for SMS. 
-            //dlr_err  The error code. 
-            //donedate  
-
-            return View();
-        }
-       
-
+        
+        
         [Authorize]
         [HttpPost]
-        public ActionResult PartnerAgreement(string id)
+        public ActionResult PartnerAgreement(PartnerViewModel m)
         {
             //Save agreement
-            return View();
+            if (Transactions.UpdatePartnership(m, Request.GetIPAddress()))
+                Response.Redirect(System.Web.VirtualPathUtility.ToAbsolute("~/PartnerAgreementConfirmed"));
+            return View(m);
         }
 
+
+        [HttpPost]
+        [Authorize]
+        public ActionResult Verify(string id, string jsonRequest)
+        {
+            var verify = JsonConvert.DeserializeObject<ExpandoObject>(jsonRequest).ActLike<IVerifyMobile>();
+            verify.Sent = DateTime.Now;
+            verify.VerificationID = new Guid(id);
+            if (!Transactions.SendTwoStepAuthentication(ref verify))
+                return new HttpStatusCodeResult(System.Net.HttpStatusCode.ExpectationFailed);
+            return new JsonHelper.JsonNetResult(verify, JsonRequestBehavior.AllowGet);            
+        }
+
+
+
+        [HttpPost]
+        public virtual ActionResult UploadFile()
+        {
+            throw new NotImplementedException();
+            HttpPostedFileBase myFile = Request.Files["MyFile"];
+            bool isUploaded = false;
+            string message = "File upload failed";
+
+            if (myFile != null && myFile.ContentLength != 0)
+            {
+                string pathForSaving = Server.MapPath("~/Uploads");
+                //if (this.CreateFolderIfNeeded(pathForSaving))
+                //{
+                //    try
+                //    {
+                //        myFile.SaveAs(Path.Combine(pathForSaving, myFile.FileName));
+                //        isUploaded = true;
+                //        message = "File uploaded successfully!";
+                //    }
+                //    catch (Exception ex)
+                //    {
+                //        message = string.Format("File upload failed: {0}", ex.Message);
+                //    }
+                //}
+            }
+            return Json(new { isUploaded = isUploaded, message = message }, "text/html");
+        }
 
 
         [Authorize]
@@ -163,18 +195,6 @@ namespace EXPEDIT.Transactions.Controllers
             //Show form [purchased sw, services, products, partner status, tickets, contracts]
             return View();
         }
-
-        [HttpPost]
-        [Authorize]
-        public ActionResult Verify(string id, string jsonRequest)
-        {
-            var verify = JsonConvert.DeserializeObject<ExpandoObject>(jsonRequest).ActLike<IVerifyMobile>();
-            verify.Sent = DateTime.Now;
-            Transactions.VerifyTwoStepAuthentication(ref verify);
-            return new JsonHelper.JsonNetResult(verify, JsonRequestBehavior.AllowGet);            
-        }
-
-        
 
       
     }
