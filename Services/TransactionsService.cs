@@ -30,6 +30,8 @@ using EXPEDIT.Transactions.Services.Payments;
 using EntityFramework.Extensions;
 using Newtonsoft.Json;
 using EXPEDIT.Share.Helpers;
+using XODB.Helpers;
+using XODB.Models;
 
 namespace EXPEDIT.Transactions.Services {
     
@@ -219,6 +221,8 @@ namespace EXPEDIT.Transactions.Services {
                     order.PaymentFirstname = c.Firstname;
                     order.PaymentLastname = c.Surname;
                     order.PaymentEmail = c.DefaultEmail;
+                    if (string.IsNullOrWhiteSpace(order.PaymentPhone))
+                        order.PaymentPhone = c.DefaultMobile;
                 }
                 else
                 {
@@ -902,6 +906,83 @@ namespace EXPEDIT.Transactions.Services {
                 d.StatisticDatas.AddObject(stat);
             }
             stat.Count++;
+        }
+
+
+        public PartnerViewModel GetPartnership(Guid? contractID = default(Guid?))
+        {
+
+            var contact = _users.GetContact(_users.Username);
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {                
+                var d = new XODBC(_users.ApplicationConnectionString, null);
+                Contract contract = null;
+                if (contractID.HasValue)
+                    contract = (from o in d.Contracts where o.ContractID == contractID.Value && o.VersionDeletedBy == null && o.Version == 0 select o).FirstOrDefault();
+                if (contract == null)
+                    contract = (from o in d.Contracts where o.Started == null && o.ObligeeID==contact.ContactID && o.ParentContractID == ConstantsHelper.CONTRACT_PARTNER && o.VersionDeletedBy == null && o.Version == 0 orderby o.VersionUpdated descending select o).FirstOrDefault();
+                if (contract == null)
+                {
+                    var original = (from o in d.Contracts where o.ContractID == ConstantsHelper.CONTRACT_PARTNER && o.VersionDeletedBy == null && o.Version == 0 select o).Single(); //TODO fix static reference
+                    contract = new Contract();
+                    original.Mirror<Contract>(ref contract);                    
+                    contract.ContractID = Guid.NewGuid();
+                    contract.ParentContractID = original.ContractID;
+                    d.Contracts.AddObject(contract);
+                }
+                if (contract.ObligeeID != contact.ContactID)
+                    contract.ObligeeID = contact.ContactID;
+                if (contract.ObligorCompanyID != ConstantsHelper.COMPANY_DEFAULT)
+                    contract.ObligorCompanyID = ConstantsHelper.COMPANY_DEFAULT;
+                if (contract.AssigneeID != contact.ContactID)
+                    contract.AssigneeID = contact.ContactID;
+                var twoStep = (from o in d.TwoStepAuthenticationDatas where o.TableType == ConstantsHelper.REFERENCE_TYPE_CONTRACT && o.ReferenceID == contract.ContractID && o.ContactID==contact.ContactID && o.VersionDeletedBy == null && o.Version == 0 orderby o.Sequence descending select o).FirstOrDefault();
+                if (twoStep == null)
+                {
+                    twoStep = new TwoStepAuthenticationData();
+                    twoStep.TwoStepAuthenticationDataID = Guid.NewGuid();
+                    twoStep.TableType = ConstantsHelper.REFERENCE_TYPE_CONTRACT;
+                    twoStep.ReferenceID = contract.ContractID;
+                    twoStep.ContactID = contact.ContactID;
+                    twoStep.Mobile = contact.DefaultMobile;
+                    twoStep.ReferenceName = contact.DefaultMobile;
+                    twoStep.VerificationCode = Guid.NewGuid().ToString().Substring(0, 4);
+                    d.TwoStepAuthenticationDatas.AddObject(twoStep);
+                }
+                d.SaveChanges();
+                var m = new PartnerViewModel { 
+                    ContactID = contact.ContactID,  
+                    TwoStepID = twoStep.TwoStepAuthenticationDataID,
+                    Lastname = contact.Surname,
+                    Firstname = contact.Firstname,
+                    ContractID = contract.ContractID,
+                    ContractText = contract.ContractText,
+                    Mobile = contact.DefaultMobile,                     
+                };
+                return m;
+            }
+        }
+
+        public void UpdatePartnership(PartnerViewModel m)
+        {
+            var contact = _users.GetContact(_users.Username);
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var original = (from o in d.Contracts where o.ContractID == ConstantsHelper.CONTRACT_PARTNER && o.VersionDeletedBy == null && o.Version == 0 select o).Single(); //TODO fix static reference
+
+            }
+        }
+
+        public bool VerifyTwoStepAuthentication(ref IVerifyMobile verification)
+        {
+             var contact = _users.GetContact(_users.Username);
+             using (new TransactionScope(TransactionScopeOption.Suppress))
+             {
+                 var d = new XODBC(_users.ApplicationConnectionString, null);
+             }
+             return false;
+
         }
        
     }

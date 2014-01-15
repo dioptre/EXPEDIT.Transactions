@@ -10,20 +10,33 @@
 {
 @Html.AntiForgeryToken()
 <fieldset>
-    <legend>Agreement....</legend>
+    <legend>Mining AppStore Partnership Agreement</legend>
+    <div class="editor-field">
+        @Html.Raw(Model.ContractText)
+        <br /><br />
+    </div>
     <div class="editor-label">
-        @Html.LabelFor(m => m.ContractID)
+        Authorised by:
     </div>
     <div class="editor-field">
-        @Html.TextBoxFor(m => m.Firstname)
+        @Html.TextBoxFor(m => m.Firstname, new { @readonly = true })
+    </div>
+    <div class="editor-field">
+        @Html.TextBoxFor(m => m.Lastname,  new { @readonly = true })
     </div>
     <div class="editor-label">
-        @Html.TextBoxFor(m => m.Lastname)
+        @Html.LabelFor(m => m.Mobile)
     </div>
-    <div class="editor-label">
-        @Html.TextBoxFor(m => m.Mobile, new { Style = "float: left;display: inline;" })&nbsp;@Html.Partial("Verify", Model)
+    <div class="editor-field">
+        @Html.TextBoxFor(m => m.Mobile, new { Style = "float: left;display: inline;", placeholder="Ex. +61 4 00000000" })&nbsp;@Html.Partial("Verify", Model)
     </div>
-    @Html.HiddenFor(m => m.TwoStepID)
+    <div id="verificationCodeDiv" class="editor-label" style="clear:left;float: inherit;display: none;">
+        @Html.LabelFor(m => m.VerificationCode)
+    </div>
+    <div class="editor-field">
+        @Html.TextBoxFor(m => m.VerificationCode, new { Style = "float: inherit;display: none;" })
+    </div>
+    @Html.HiddenFor(m => m.VerificationID)
     <input id="btnPartnerAgreementAgreed" type="submit" value="Agree to Terms" style="display:none;" disabled/>
 </fieldset>
 }
@@ -45,6 +58,9 @@
                     required: true,
                 },
                 "Lastname": {
+                    required: true,
+                },
+                "VerificationCode": {
                     required: true,
                 }
             },

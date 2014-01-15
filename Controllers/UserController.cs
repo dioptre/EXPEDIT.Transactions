@@ -113,9 +113,8 @@ namespace EXPEDIT.Transactions.Controllers
         [Authorize]
         public ActionResult PartnerAgreement()
         {
-            //Show agreement
-            var m = new PartnerViewModel { VerificationID = Guid.NewGuid() };
-            return View(m);
+            //Show agreement            
+            return View(Transactions.GetPartnership());
         }
 
 
@@ -170,7 +169,8 @@ namespace EXPEDIT.Transactions.Controllers
         public ActionResult Verify(string id, string jsonRequest)
         {
             var verify = JsonConvert.DeserializeObject<ExpandoObject>(jsonRequest).ActLike<IVerifyMobile>();
-            verify.Sent = DateTime.Now;   
+            verify.Sent = DateTime.Now;
+            Transactions.VerifyTwoStepAuthentication(ref verify);
             return new JsonHelper.JsonNetResult(verify, JsonRequestBehavior.AllowGet);            
         }
 

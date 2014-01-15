@@ -5,12 +5,19 @@ using System.Web;
 using Orchard;
 using System.ServiceModel;
 using EXPEDIT.Transactions.ViewModels;
+using XODB.Models;
 
 namespace EXPEDIT.Transactions.Services
 {
      [ServiceContract]
     public interface ITransactionsService : IDependency 
     {
+         [OperationContract]
+         PartnerViewModel GetPartnership(Guid? contractID = default(Guid?));
+
+         [OperationContract]
+         bool VerifyTwoStepAuthentication(ref IVerifyMobile verification);
+
          [OperationContract]
          void MakePayment(ref OrderViewModel order);
 
