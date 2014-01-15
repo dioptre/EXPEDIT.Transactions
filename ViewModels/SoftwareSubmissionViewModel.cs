@@ -12,6 +12,7 @@ namespace EXPEDIT.Transactions.ViewModels
     {
         public Guid ContactID { get; set; }
         public HttpPostedFileBase MyFile { get; set; }
+        public string MyDescription { get; set; }
 
     }
 }
