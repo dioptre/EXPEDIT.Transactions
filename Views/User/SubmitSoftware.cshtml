@@ -8,25 +8,31 @@
     Layout.Title = T("Submit Software").ToString();
 }
 
-@Html.TextArea("Text", "TEST TEXT", 12, 80,
+<article class="content-item page">
+    <header><h1>@Layout.Title</h1></header>
+    <fieldset>
+    @*<legend></legend>*@
+    <div class="editor-label">
+        <p>Please describe your software:</p>
+    </div>
+    <div class="editor-field">
+    @Html.TextArea("Text", "TEST TEXT", 12, 80,
 	 new Dictionary<string,object> {
 		{"class", "html tinymce"},	
         {"style", "width:100%"}
 	 })
-
-
-@*@using (Html.BeginFormAntiForgeryPost(Url.Action(string.Format("{0}", ViewData["TransparentRedirectUrl"]), "User", new { area = "EXPEDIT.Transactions", Controller = "User", Action = "Index" }), FormMethod.Post, new { id = "payment-form", @class = "payment-form" }))*@
-@{
-      @Html.TextBoxFor(m => m.MyFile, new { id = "fu-my-simple-upload", type = "file" })
-      <a href="#" id="hl-start-upload">Start upload</a>            
-   
-}
-<!-- The file upload form used as target for the file upload widget -->
-    <form id="fileupload" action="//jquery-file-upload.appspot.com/" method="POST" enctype="multipart/form-data">
+    </div>
+    <div class="editor-label">
+        <p style="margin-top:9px;">Upload supporting files:</p>
+    </div>
+    <div class="editor-field">
+    <!-- The file upload form used as target for the file upload widget -->
+    <div id="fileupload">
+        @Html.AntiForgeryToken()
         <!-- Redirect browsers with JavaScript disabled to the origin page -->
         @*<noscript><input type="hidden" name="redirect" value="http://blueimp.github.io/jQuery-File-Upload/"></noscript>*@
         <!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
-        <div class="row fileupload-buttonbar">
+        <div class="row fileupload-buttonbar" style="margin-left:0px;">
             <div class="col-lg-7">
                 <!-- The fileinput-button span is used to style the file input field as button -->
                 <span class="btn btn-success fileinput-button">
@@ -38,7 +44,7 @@
                     <i class="glyphicon glyphicon-upload"></i>
                     <span>Start upload</span>
                 </button>
-                <button type="reset" class="btn btn-warning cancel">
+                @*<button type="reset" class="btn btn-warning cancel">
                     <i class="glyphicon glyphicon-ban-circle"></i>
                     <span>Cancel upload</span>
                 </button>
@@ -46,7 +52,7 @@
                     <i class="glyphicon glyphicon-trash"></i>
                     <span>Delete</span>
                 </button>
-                <input type="checkbox" class="toggle">
+                <input type="checkbox" class="toggle">*@
                 <!-- The global file processing state -->
                 <span class="fileupload-process"></span>
             </div>
@@ -62,7 +68,10 @@
         </div>
         <!-- The table listing the files available for upload/download -->
         <table role="presentation" class="table table-striped"><tbody class="files"></tbody></table>
-    </form>
+    </div>
+    </div></fieldset>
+   
+    </article>
 <!-- The template to display files available for upload -->
 <script id="template-upload" type="text/x-tmpl">
 {% for (var i=0, file; file=o.files[i]; i++) { %}
@@ -115,7 +124,7 @@
                 {% } %}
             </p>
             {% if (file.error) { %}
-                <div><span class="label label-danger">Error</span> {%=file.error%}</div>
+                <div><span class="label label-danger">Errork</span> {%=file.error%}</div>
             {% } %}
         </td>
         <td>
@@ -138,208 +147,7 @@
     </tr>
 {% } %}
 </script>
- <script type="text/javascript">
-        // just for the demos, avoids form submit
-        jQuery.validator.setDefaults({
-            debug: false,
-            success: "valid"
-        });
-        $("#payment-form").validate({
-            rules: {
-                "customer[credit_card][expiration_date]" : {
-                        required: true,
-                        dateCC: true
-                },
-                "customer[credit_card][number]": {
-                    required: true,
-                    creditcard: true
-                },
-                "customer[email]": {
-                    required: true,
-                    email2: true
-                },
-            },
-            submitHandler: function(form) {
-                form.submit();
-            }            
-        });
 
-        
-
-    // jqXHRData needed for grabbing by data object of fileupload scope
-        var jqXHRData;
-        var jqXHR;
-
-        $(document).ready(function () {
-
-            //Initialization of fileupload
-            initSimpleFileUpload();
-
-            //Handler for "Start upload" button 
-            $("#hl-start-upload").on('click', function () {
-                if (jqXHRData) {
-                    jqXHRData.submit();
-                }
-                return false;
-            });
-        });
-
-        function initSimpleFileUpload() {
-            'use strict';
-
-            $('#fu-my-simple-upload').fileupload({
-                url: '/File/UploadFile',
-                dataType: 'json',
-                add: function (e, data) {
-                    jqXHRData = data
-                },
-                done: function (event, data) {
-                    if (data.result.isUploaded) {
-
-                    }
-                    else {
-
-                    }
-                    alert(data.result.message);
-                },
-                fail: function (event, data) {
-                    if (data.files[0].error) {
-                        alert(data.files[0].error);
-                    }
-                }
-            });
-        }
-
-        $(function () {
-            'use strict';
-
-            // Initialize the jQuery File Upload widget:
-            $('#fu-my-file').fileupload();
-
-            $('#fu-my-file').fileupload('option', {
-                autoUpload: true,
-                url: '/Upload/UploadMyFile',
-                dataType: 'json',
-            //maxFileSize: 2000000, // Size in Bytes – 2 MB
-            add: function (e, data) {
-                var goUpload = true;
-                var uploadFile = data.files[0];
-
-                if (!(/\.(gif|jpg|jpeg|tiff|png|csv|pdf)$/i).test(uploadFile.name)) {
-                    alert('Wrong type');
-                    goUpload = false;
-                } else if (uploadFile.size > 2000000) { // 2mb
-                    alert('Please upload a smaller file, max size is 2 MB');
-                    goUpload = false;
-                }
-                else {
-                    alert(uploadFile.name);
-                }
-
-                if (goUpload == true) {
-                    showLoader();
-                    var jqXHR = data.submit()
-                    .success(function (result, textStatus, jqXHR) {
-
-                        if (result.isValid) {
-
-                        }
-                        else {
-
-                        }
-                    })
-                    .error(function (jqXHR, textStatus, errorThrown) {
-                        if (typeof (jqXHR) != 'undefined' || typeof (textStatus) != 'undefined' || typeof (errorThrown) != 'undefined') {
-                            alert(textStatus + errorThrown + jqXHR);
-                        }
-                    });
-                }
-            },
-            fail: function (event, data) {
-                if (data.files[0].error) {
-                    alert(data.files[0].error);
-                }
-            }
-        });
-        });
-
-        /*
-    * jQuery File Upload Plugin JS Example 8.9.1
-    * https://github.com/blueimp/jQuery-File-Upload
-    *
-    * Copyright 2010, Sebastian Tschan, Also using glyphicons and bootstrap
-    * https://blueimp.net
-    *
-    * Licensed under the MIT license:
-    * http://www.opensource.org/licenses/MIT
-    */
-
-        /* global $, window */
-
-        $(function () {
-            'use strict';
-
-            // Initialize the jQuery File Upload widget:
-            $('#fileupload').fileupload({
-                // Uncomment the following to send cross-domain cookies:
-                //xhrFields: {withCredentials: true},
-                //url: '/server/php/'
-            });
-
-            // Enable iframe cross-domain access via redirect option:
-            $('#fileupload').fileupload(
-                'option',
-                'redirect',
-                window.location.href.replace(
-                    /\/[^\/]*$/,
-                    '/cors/result.html?%s'
-                )
-            );
-
-            if (window.location.hostname === 'blueimp.github.io') {
-                // Demo settings:
-                $('#fileupload').fileupload('option', {
-                    url: '//jquery-file-upload.appspot.com/',
-                    // Enable image resizing, except for Android and Opera,
-                    // which actually support image resizing, but fail to
-                    // send Blob objects via XHR requests:
-                    disableImageResize: /Android(?!.*Chrome)|Opera/
-                        .test(window.navigator.userAgent),
-                    maxFileSize: 5000000,
-                    acceptFileTypes: /(\.|\/)(gif|jpe?g|png)$/i
-                });
-                // Upload server status check for browsers with CORS support:
-                if ($.support.cors) {
-                    $.ajax({
-                        url: '//jquery-file-upload.appspot.com/',
-                        type: 'HEAD'
-                    }).fail(function () {
-                        $('<div class="alert alert-danger"/>')
-                            .text('Upload server currently unavailable - ' +
-                                    new Date())
-                            .appendTo('#fileupload');
-                    });
-                }
-            } else {
-                // Load existing files:
-                $('#fileupload').addClass('fileupload-processing');
-                $.ajax({
-                    // Uncomment the following to send cross-domain cookies:
-                    //xhrFields: {withCredentials: true},
-                    url: $('#fileupload').fileupload('option', 'url'),
-                    dataType: 'json',
-                    context: $('#fileupload')[0]
-                }).always(function () {
-                    $(this).removeClass('fileupload-processing');
-                }).done(function (result) {
-                    $(this).fileupload('option', 'done')
-                        .call(this, $.Event('done'), { result: result });
-                });
-            }
-
-        });
-
-</script>
 <script src="@Url.Content("~/Modules/EXPEDIT.Transactions/Scripts/jquery.fileupload.js")"></script>
 <script src="@Url.Content("~/Modules/EXPEDIT.Transactions/Scripts/jquery.fileupload-ui.js")"></script>
 <script src="@Url.Content("~/Modules/EXPEDIT.Transactions/Scripts/jquery.iframe-transport.js")"></script>
@@ -372,11 +180,12 @@
 <link href="@Url.Content("~/Modules/EXPEDIT.Transactions/Styles/jquery.fileupload-ui.css")" rel="stylesheet" type="text/css" />
 <link href="@Url.Content("~/Modules/EXPEDIT.Transactions/Styles/jquery.fileupload.css")" rel="stylesheet" type="text/css" />
 <link href="@Url.Content("~/Modules/EXPEDIT.Transactions/Styles/bootstrap.min.css")" rel="stylesheet" type="text/css" />
+<link href="@Url.Content("~/Themes/MAS1/Styles/site.css")" rel="stylesheet" type="text/css" />
 
 
 
 <script src="@Url.Content("~/Modules/TinyMce/Scripts/tiny_mce.js")"></script>
-<script src="@Url.Content("~/Modules/TinyMce/Scripts/tiny_mce.js_src")"></script>
+<script src="@Url.Content("~/Modules/TinyMce/Scripts/tiny_mce_src.js")"></script>
 <script type="text/javascript">
     tinyMCE.init({
         theme: "advanced",
@@ -393,4 +202,173 @@
         // shouldn't be needed due to the valid_elements setting, but TinyMCE would strip script.src without it.
         extended_valid_elements: "script[type|defer|src|language]"
     });
+</script>
+
+
+
+ <script type="text/javascript">
+     // just for the demos, avoids form submit
+     jQuery.validator.setDefaults({
+         debug: false,
+         success: "valid"
+     });
+     $("#payment-form").validate({
+         rules: {
+             "customer[credit_card][expiration_date]": {
+                 required: true,
+                 dateCC: true
+             },
+             "customer[credit_card][number]": {
+                 required: true,
+                 creditcard: true
+             },
+             "customer[email]": {
+                 required: true,
+                 email2: true
+             },
+         },
+         submitHandler: function (form) {
+             form.submit();
+         }
+     });
+
+
+
+     // jqXHRData needed for grabbing by data object of fileupload scope
+     var jqXHRData;     
+
+     $(document).ready(function () {
+
+         //Initialization of fileupload
+         initSimpleFileUpload();
+
+         //Handler for "Start upload" button 
+         $("#hl-start-upload").on('click', function () {
+             if (jqXHRData) {
+                 jqXHRData.submit();
+             }
+             return false;
+         });
+     });
+
+     function initSimpleFileUpload() {
+         'use strict';
+
+         ////// Initialize the jQuery File Upload widget:
+         //$('#fileupload').fileupload({
+         //    // Uncomment the following to send cross-domain cookies:
+         //    //xhrFields: {withCredentials: true},
+         //    url: '/store/user/uploadfile'
+         //});
+
+         $('#fileupload').fileupload({
+             url: '/store/user/uploadfile',
+             dataType: 'json',
+             autoUpload: true,
+             //add: function (e, data) {
+             //    jqXHRData = data;
+             //    data.process();
+             //},
+             //done: function (event, data) {
+             //    if (data.result.isUploaded) {
+
+             //    }
+             //    else {
+             //        alert(data.result.message);
+             //    }                 
+             //},
+             //fail: function (event, data) {
+             //    if (data.files[0].error) {
+             //        alert(data.files[0].error);
+             //    }
+             //},
+             formData: function (form) {
+                 return [{ name: "__RequestVerificationToken", value: $('input[name="__RequestVerificationToken"]').val()}]
+             }
+         });
+
+         // Enable iframe cross-domain access via redirect option:
+         //$('#fileupload').fileupload(
+         //    'option',
+         //    'redirect',
+         //    window.location.href.replace(
+         //        /\/[^\/]*$/,
+         //        '/cors/result.html?%s'
+         //    )
+         //);
+
+       
+         $('#fileupload').addClass('fileupload-processing');
+         $.ajax({
+             // Uncomment the following to send cross-domain cookies:
+             //xhrFields: {withCredentials: true},
+             type: "POST",
+             url: $('#fileupload').fileupload('option', 'url'),
+             dataType: 'json',
+             data: { __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
+             context: $('#fileupload')[0]
+         }).always(function () {
+             $(this).removeClass('fileupload-processing');
+         }).done(function (result) {
+             $(this).fileupload('option', 'done')
+                 .call(this, $.Event('done'), { result: result });
+         });
+
+     }
+
+
+     //$(function () {
+     //    'use strict';
+
+     //    // Initialize the jQuery File Upload widget:
+     //    $('#fu-my-file').fileupload();
+
+     //    $('#fu-my-file').fileupload('option', {
+     //        autoUpload: true,
+     //        url: '/store/user/uploadfile',
+     //        dataType: 'json',
+     //    //maxFileSize: 2000000, // Size in Bytes – 2 MB
+     //    add: function (e, data) {
+     //        var goUpload = true;
+     //        var uploadFile = data.files[0];
+
+     //        if (!(/\.(gif|jpg|jpeg|tiff|png|csv|pdf)$/i).test(uploadFile.name)) {
+     //            alert('Wrong type');
+     //            goUpload = false;
+     //        } else if (uploadFile.size > 2000000) { // 2mb
+     //            alert('Please upload a smaller file, max size is 2 MB');
+     //            goUpload = false;
+     //        }
+     //        else {
+     //            alert(uploadFile.name);
+     //        }
+
+     //        if (goUpload == true) {
+     //            //showLoader();
+     //            var jqXHR = data.submit()
+     //            .success(function (result, textStatus, jqXHR) {
+
+     //                if (result.isValid) {
+
+     //                }
+     //                else {
+
+     //                }
+     //            })
+     //            .error(function (jqXHR, textStatus, errorThrown) {
+     //                if (typeof (jqXHR) != 'undefined' || typeof (textStatus) != 'undefined' || typeof (errorThrown) != 'undefined') {
+     //                    alert(textStatus + errorThrown + jqXHR);
+     //                }
+     //            });
+     //        }
+     //    },
+     //    fail: function (event, data) {
+     //        if (data.files[0].error) {
+     //            alert(data.files[0].error);
+     //        }
+     //    }
+     //});
+     //});
+
+
 </script>

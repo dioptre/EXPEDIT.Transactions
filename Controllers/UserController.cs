@@ -13,6 +13,7 @@ using ImpromptuInterface;
 using ImpromptuInterface.Dynamic;
 using XODB.Helpers;
 using System.Web;
+using System.Collections.Generic;
 
 namespace EXPEDIT.Transactions.Controllers
 {
@@ -143,18 +144,14 @@ namespace EXPEDIT.Transactions.Controllers
         }
 
 
-
-        [HttpPost]
+        [Authorize]
+        [Themed(Enabled=false)]
         public virtual ActionResult UploadFile()
         {
-            throw new NotImplementedException();
-            HttpPostedFileBase myFile = Request.Files["MyFile"];
-            bool isUploaded = false;
-            string message = "File upload failed";
+            HttpPostedFileBase myFile = Request.Files["Files"];
 
             if (myFile != null && myFile.ContentLength != 0)
             {
-                string pathForSaving = Server.MapPath("~/Uploads");
                 //if (this.CreateFolderIfNeeded(pathForSaving))
                 //{
                 //    try
@@ -169,7 +166,13 @@ namespace EXPEDIT.Transactions.Controllers
                 //    }
                 //}
             }
-            return Json(new { isUploaded = isUploaded, message = message }, "text/html");
+            dynamic file = Build<ExpandoObject>.NewObject(name:"test",type:"application/octet",size:14,url:"/ast",thumbnail_url:"test");
+            dynamic file2 = Build<ExpandoObject>.NewObject(name: "test", type: "application/octet", size: 14, url: "/ast", thumbnail_url: "test");
+            var list = new List<dynamic>();
+            list.Add(file);
+            list.Add(file2);
+            
+            return new JsonHelper.JsonNetResult(new { files = list.ToArray() }, JsonRequestBehavior.AllowGet);
         }
 
 
