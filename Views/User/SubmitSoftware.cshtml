@@ -7,7 +7,8 @@
     HtmlHelper.UnobtrusiveJavaScriptEnabled = true;
     Layout.Title = T("Submit Software").ToString();
 }
-
+@using (Html.BeginForm("SubmitSoftware", "User", new { area = "EXPEDIT.Transactions" }, FormMethod.Post, new { id = "form1", @class = "form" }))
+{
 <article class="content-item page">
     <header><h1>@Layout.Title</h1></header>
     <fieldset>
@@ -70,8 +71,9 @@
         <table role="presentation" class="table table-striped"><tbody class="files"></tbody></table>
     </div>
     </div></fieldset>
-   
+    <input type="submit" value="Submit" />
     </article>
+}
 <!-- The template to display files available for upload -->
 <script id="template-upload" type="text/x-tmpl">
 {% for (var i=0, file; file=o.files[i]; i++) { %}
