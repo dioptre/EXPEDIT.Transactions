@@ -14,20 +14,23 @@ using ImpromptuInterface.Dynamic;
 using XODB.Helpers;
 using System.Web;
 using System.Collections.Generic;
+using EXPEDIT.Share.Services;
 
 namespace EXPEDIT.Transactions.Controllers
 {
     [Themed]
     public class UserController : Controller
     {
-        public IOrchardServices Services { get; set; }
-        public ITransactionsService Transactions { get; set; }     
-        
-        public UserController(IOrchardServices services, ITransactionsService transactions)
+        private IOrchardServices _services { get; set; }
+        private ITransactionsService _transactions { get; set; }
+        private IContentService _content { get; set; }
+
+        public UserController(IOrchardServices services, ITransactionsService transactions, IContentService content)
         {
-            Services = services;
+            _services = services;
             T = NullLocalizer.Instance;
-            Transactions = transactions;
+            _transactions = transactions;
+            _content = content;
         }
 
         public Localizer T { get; set; }
@@ -35,7 +38,7 @@ namespace EXPEDIT.Transactions.Controllers
         [ValidateInput(false)]
         public ActionResult Index()
         {
-            var m = new ProductsViewModel { Products = Transactions.GetProducts() };
+            var m = new ProductsViewModel { Products = _transactions.GetProducts() };
             return View(m);
         }
 
@@ -44,7 +47,7 @@ namespace EXPEDIT.Transactions.Controllers
         {
             try
             {
-                Transactions.IncrementDownloadCounter(new Guid(@ref));
+                _transactions.IncrementDownloadCounter(new Guid(@ref));
                 return new RedirectResult(System.Web.VirtualPathUtility.ToAbsolute(string.Format("~/share/download/{0}", id)));
             }
             catch
@@ -59,15 +62,15 @@ namespace EXPEDIT.Transactions.Controllers
         {
             var supplierModelID = new Guid(id);
             Guid modelID = default(Guid);
-            var p = Transactions.GetProduct(supplierModelID);
+            var p = _transactions.GetProduct(supplierModelID);
             if (!string.IsNullOrWhiteSpace(@ref))
                 modelID = new Guid(@ref);
             else
                 modelID = p.ModelID.Value;
-            Transactions.IncrementBuyCounter(supplierModelID, modelID);
-            var op = new OrderProductViewModel(p) { Units = 1, ContractConditions = Transactions.GetContractConditions(new Guid[] { supplierModelID, modelID }) };
+            _transactions.IncrementBuyCounter(supplierModelID, modelID);
+            var op = new OrderProductViewModel(p) { Units = 1, ContractConditions = _transactions.GetContractConditions(new Guid[] { supplierModelID, modelID }) };
             var m = new OrderViewModel() { OrderID = Guid.NewGuid(), Products = new OrderProductViewModel[] { op } }; //TODO Update existing order before creating a new one
-            Transactions.UpdateOrder(m);
+            _transactions.UpdateOrder(m);
             return View(m);
         }
 
@@ -75,11 +78,11 @@ namespace EXPEDIT.Transactions.Controllers
         public ActionResult Confirm(string id)
         {
             Guid orderID = new Guid(id);
-            if (Transactions.GetOrderProcessed(orderID))
+            if (_transactions.GetOrderProcessed(orderID))
                 return RedirectToAction("Paid", new { area = "EXPEDIT.Transactions", controller = "User", id = id });
-            var m = Transactions.GetOrder(orderID);
-            Transactions.GetOrderOwner(ref m);
-            Transactions.PreparePayment(ref m);      
+            var m = _transactions.GetOrder(orderID);
+            _transactions.GetOrderOwner(ref m);
+            _transactions.PreparePayment(ref m);      
             return View(m);
         }
 
@@ -87,22 +90,23 @@ namespace EXPEDIT.Transactions.Controllers
         public ActionResult PaymentResult(string id, string @ref)
         {
             Guid orderID = new Guid(id);
-            if (Transactions.GetOrderProcessed(orderID))
+            if (_transactions.GetOrderProcessed(orderID))
                 return RedirectToAction("Paid", new { area = "EXPEDIT.Transactions", controller = "User", id = id });
-            var m = Transactions.GetOrder(orderID);
+            var m = _transactions.GetOrder(orderID);
             m.PaymentAntiForgeryKey = new Guid(@ref);
             m.PaymentQuery = Request.Url.Query;
-            Transactions.PreparePaymentResult(ref m);
+            _transactions.PreparePaymentResult(ref m);
             if (m.PaymentStatus > 0)
             {
-                Transactions.UpdateOrderOwner(m);
-                Transactions.MakePayment(ref m);
+                _transactions.UpdateOrderOwner(m);
+                _transactions.MakePayment(ref m);
                 if ((m.PaymentStatus & 1) == 1) //Success
                 {
-                    Transactions.UpdateOrderPaid(m);
-                    m.Downloads = Transactions.GetDownloads(orderID);
+                    _transactions.UpdateOrderPaid(m);
+                    m.Downloads = _transactions.GetDownloads(orderID);
                 }
             }
+            _content.UpdateAffiliate();
             return View(m);
         }
 
@@ -110,10 +114,10 @@ namespace EXPEDIT.Transactions.Controllers
         public ActionResult Paid(string id)
         {
             Guid orderID = new Guid(id);
-            if (!Transactions.GetOrderPaid(orderID))
+            if (!_transactions.GetOrderPaid(orderID))
                 return new HttpUnauthorizedResult("Unauthorized access to unpaid order.");
-            var m = Transactions.GetOrder(orderID);
-            m.Downloads = Transactions.GetDownloads(orderID);
+            var m = _transactions.GetOrder(orderID);
+            m.Downloads = _transactions.GetDownloads(orderID);
             return View(m);
         }
 
@@ -121,7 +125,7 @@ namespace EXPEDIT.Transactions.Controllers
         public ActionResult PartnerAgreement()
         {
             //Show agreement            
-            return View(Transactions.GetPartnership());
+            return View(_transactions.GetPartnership());
         }
         
         
@@ -130,7 +134,7 @@ namespace EXPEDIT.Transactions.Controllers
         public ActionResult PartnerAgreement(PartnerViewModel m)
         {
             //Save agreement
-            if (Transactions.UpdatePartnership(m, Request.GetIPAddress()))
+            if (_transactions.UpdatePartnership(m, Request.GetIPAddress()))
                 return new RedirectResult(System.Web.VirtualPathUtility.ToAbsolute("~/PartnerAgreementConfirmed"));
             return View(m);
         }
@@ -143,7 +147,7 @@ namespace EXPEDIT.Transactions.Controllers
             var verify = JsonConvert.DeserializeObject<ExpandoObject>(jsonRequest).ActLike<IVerifyMobile>();
             verify.Sent = DateTime.Now;
             verify.VerificationID = new Guid(id);
-            if (!Transactions.SendTwoStepAuthentication(ref verify))
+            if (!_transactions.SendTwoStepAuthentication(ref verify))
                 return new HttpStatusCodeResult(System.Net.HttpStatusCode.ExpectationFailed);
             return new JsonHelper.JsonNetResult(verify, JsonRequestBehavior.AllowGet);            
         }
@@ -171,8 +175,8 @@ namespace EXPEDIT.Transactions.Controllers
                 //    }
                 //}
             }
-            dynamic file = Build<ExpandoObject>.NewObject(name:"test",type:"application/octet",size:14,url:"/ast",thumbnail_url:"test");
-            dynamic file2 = Build<ExpandoObject>.NewObject(name: "test", type: "application/octet", size: 14, url: "/ast", thumbnail_url: "test");
+            dynamic file = Build<ExpandoObject>.NewObject(name:"test",type:"application/octet",size:14,url:"/ast");
+            dynamic file2 = Build<ExpandoObject>.NewObject(name: "test", type: "application/octet", size: 14, url: "/ast");
             var list = new List<dynamic>();
             list.Add(file);
             list.Add(file2);
