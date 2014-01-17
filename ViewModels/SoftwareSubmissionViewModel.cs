@@ -6,15 +6,23 @@ using System.Collections.Generic;
 using XODB.Models;
 using EXPEDIT.Share.Helpers;
 using System.Web;
+using Newtonsoft.Json;
+using XODB.Module.BusinessObjects;
+
 namespace EXPEDIT.Transactions.ViewModels
 {
-    public class SoftwareSubmissionViewModel 
+    [JsonObject]
+    public class SoftwareSubmissionViewModel
     {
+        [JsonIgnore]
         public Guid SoftwareSubmissionID { get; set; }
         public string Description { get; set; }
         public bool ForSale { get; set; }
         public bool ForManagement { get; set; }
         public bool ForDevelopment { get; set; }
-
+        [JsonIgnore]
+        public Dictionary<Guid, HttpPostedFileBase> Files { get; set; }
+        [JsonIgnore]
+        public Dictionary<Guid, int> FileLengths { get; set; }
     }
 }

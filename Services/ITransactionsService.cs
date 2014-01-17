@@ -72,5 +72,8 @@ namespace EXPEDIT.Transactions.Services
          [OperationContract]
          IEnumerable<ContractConditionViewModel> GetContractConditions(Guid[] referenceIDs);
 
+         [OperationContract]
+         bool SubmitSoftware(SoftwareSubmissionViewModel s);
+
     }
 }

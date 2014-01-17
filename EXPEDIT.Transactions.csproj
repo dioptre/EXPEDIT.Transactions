@@ -50,6 +50,10 @@
     <Reference Include="Braintree-2.27.0">
       <HintPath>..\..\..\packages\Braintree.2.27.0\lib\Braintree-2.27.0.dll</HintPath>
     </Reference>
+    <Reference Include="DevExpress.Persistent.Base.v13.1, Version=13.1.7.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\lib\devexpress\DevExpress.Persistent.Base.v13.1.dll</HintPath>
+    </Reference>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\packages\EntityFramework.6.0.1\lib\net45\EntityFramework.dll</HintPath>

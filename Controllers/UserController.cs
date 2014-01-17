@@ -157,30 +157,18 @@ namespace EXPEDIT.Transactions.Controllers
         [Themed(Enabled=false)]
         public virtual ActionResult UploadFile()
         {
-            HttpPostedFileBase myFile = Request.Files["Files"];
-
-            if (myFile != null && myFile.ContentLength != 0)
-            {
-                //if (this.CreateFolderIfNeeded(pathForSaving))
-                //{
-                //    try
-                //    {
-                //        myFile.SaveAs(Path.Combine(pathForSaving, myFile.FileName));
-                //        isUploaded = true;
-                //        message = "File uploaded successfully!";
-                //    }
-                //    catch (Exception ex)
-                //    {
-                //        message = string.Format("File upload failed: {0}", ex.Message);
-                //    }
-                //}
-            }
-            dynamic file = Build<ExpandoObject>.NewObject(name:"test",type:"application/octet",size:14,url:"/ast");
-            dynamic file2 = Build<ExpandoObject>.NewObject(name: "test", type: "application/octet", size: 14, url: "/ast");
+            var id = Request.Params["SoftwareSubmissionID"];
+            if (string.IsNullOrWhiteSpace(id))
+                return null;
+            SoftwareSubmissionViewModel s = new SoftwareSubmissionViewModel { SoftwareSubmissionID = new Guid(id) , FileLengths = new Dictionary<Guid,int>()};
+            if (s.Files == null)
+                s.Files = new Dictionary<Guid, HttpPostedFileBase>();
+            for (int i = 0; i < Request.Files.Count; i++ )
+                s.Files.Add(Guid.NewGuid(), Request.Files[i]);
+            _transactions.SubmitSoftware(s);
             var list = new List<dynamic>();
-            list.Add(file);
-            list.Add(file2);
-            
+            foreach (var f in s.Files)
+                list.Add(Build<ExpandoObject>.NewObject(name: f.Value.FileName, type: "application/octet", size: s.FileLengths[f.Key], url: VirtualPathUtility.ToAbsolute(string.Format("~/share/file/{0}", f.Key))));
             return new JsonHelper.JsonNetResult(new { files = list.ToArray() }, JsonRequestBehavior.AllowGet);
         }
 
@@ -195,17 +183,20 @@ namespace EXPEDIT.Transactions.Controllers
 
         [Authorize]
         [HttpPost]
-        public ActionResult SubmitSoftware(string id)
+        [ValidateInput(false)]
+        public ActionResult SubmitSoftware(SoftwareSubmissionViewModel s)
         {
             //Save form
-            return View();
+            if (_transactions.SubmitSoftware(s))
+                return new RedirectResult(System.Web.VirtualPathUtility.ToAbsolute("~/SubmitSoftwareConfirmed"));
+            return View(s);
         }
 
 
         [Authorize]
         public ActionResult MyAccount(string id)
         {
-            //Show form [purchased sw, services, products, partner status, tickets, contracts, affiliates]
+            //Show form [purchased sw, licenses, services, products, partner status, parnter sw, tickets, contracts, affiliates]
             return View();
         }
 
