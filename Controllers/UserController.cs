@@ -45,7 +45,7 @@ namespace EXPEDIT.Transactions.Controllers
             try
             {
                 Transactions.IncrementDownloadCounter(new Guid(@ref));
-                Response.Redirect(System.Web.VirtualPathUtility.ToAbsolute(string.Format("~/share/download/{0}", id)));
+                return new RedirectResult(System.Web.VirtualPathUtility.ToAbsolute(string.Format("~/share/download/{0}", id)));
             }
             catch
             {
@@ -58,10 +58,15 @@ namespace EXPEDIT.Transactions.Controllers
         public ActionResult Buy(string id, string @ref)
         {
             var supplierModelID = new Guid(id);
-            var modelID = new Guid(@ref);
+            Guid modelID = default(Guid);
+            var p = Transactions.GetProduct(supplierModelID);
+            if (!string.IsNullOrWhiteSpace(@ref))
+                modelID = new Guid(@ref);
+            else
+                modelID = p.ModelID.Value;
             Transactions.IncrementBuyCounter(supplierModelID, modelID);
-            var p = new OrderProductViewModel(Transactions.GetProduct(supplierModelID)) { Units = 1, ContractConditions = Transactions.GetContractConditions(new Guid[] { supplierModelID, modelID }) };
-            var m = new OrderViewModel() { OrderID = Guid.NewGuid(), Products = new OrderProductViewModel[] { p } }; //TODO Update existing order before creating a new one
+            var op = new OrderProductViewModel(p) { Units = 1, ContractConditions = Transactions.GetContractConditions(new Guid[] { supplierModelID, modelID }) };
+            var m = new OrderViewModel() { OrderID = Guid.NewGuid(), Products = new OrderProductViewModel[] { op } }; //TODO Update existing order before creating a new one
             Transactions.UpdateOrder(m);
             return View(m);
         }
@@ -126,7 +131,7 @@ namespace EXPEDIT.Transactions.Controllers
         {
             //Save agreement
             if (Transactions.UpdatePartnership(m, Request.GetIPAddress()))
-                Response.Redirect(System.Web.VirtualPathUtility.ToAbsolute("~/PartnerAgreementConfirmed"));
+                return new RedirectResult(System.Web.VirtualPathUtility.ToAbsolute("~/PartnerAgreementConfirmed"));
             return View(m);
         }
 
