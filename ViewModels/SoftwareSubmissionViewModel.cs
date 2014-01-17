@@ -10,9 +10,11 @@ namespace EXPEDIT.Transactions.ViewModels
 {
     public class SoftwareSubmissionViewModel 
     {
-        public Guid ContactID { get; set; }
-        public HttpPostedFileBase MyFile { get; set; }
-        public string MyDescription { get; set; }
+        public Guid SoftwareSubmissionID { get; set; }
+        public string Description { get; set; }
+        public bool ForSale { get; set; }
+        public bool ForManagement { get; set; }
+        public bool ForDevelopment { get; set; }
 
     }
 }

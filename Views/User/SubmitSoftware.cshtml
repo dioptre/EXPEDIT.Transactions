@@ -17,11 +17,29 @@
         <p>Please describe your software:</p>
     </div>
     <div class="editor-field">
-    @Html.TextArea("Text", "TEST TEXT", 12, 80,
+    @Html.TextAreaFor(m => m.Description, 12, 80,
 	 new Dictionary<string,object> {
 		{"class", "html tinymce"},	
         {"style", "width:100%"}
-	 })
+	 })<br />
+    </div>
+    <div class="editor-label">
+        Would you like us to <strong>sell</strong> this software?
+    </div>
+    <div class="editor-field">
+        @Html.CheckBoxFor(m => m.ForSale)
+    </div>
+    <div class="editor-label">
+        Would you like us to <strong>manage</strong> this software?
+    </div>
+    <div class="editor-field">
+        @Html.CheckBoxFor(m => m.ForManagement)
+    </div>
+    <div class="editor-label">
+        Would you like us to further <strong>develop</strong> this software?
+    </div>
+    <div class="editor-field">
+        @Html.CheckBoxFor(m => m.ForDevelopment)
     </div>
     <div class="editor-label">
         <p style="margin-top:9px;">Upload supporting files:</p>
@@ -72,6 +90,7 @@
     </div>
     </div></fieldset>
     <input type="submit" value="Submit" />
+    @Html.HiddenFor(m => m.SoftwareSubmissionID);
     </article>
 }
 <!-- The template to display files available for upload -->
@@ -285,7 +304,9 @@
              //    }
              //},
              formData: function (form) {
-                 return [{ name: "__RequestVerificationToken", value: $('input[name="__RequestVerificationToken"]').val()}]
+                 return [{ name: "__RequestVerificationToken", value: $('input[name="__RequestVerificationToken"]').val() },
+                     { name: "SoftwareSubmissionID", value: "@Model.SoftwareSubmissionID" }
+                 ];
              }
          });
 

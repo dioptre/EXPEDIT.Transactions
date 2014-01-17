@@ -188,8 +188,9 @@ namespace EXPEDIT.Transactions.Controllers
         [Authorize]
         public ActionResult SubmitSoftware()
         {
+            var m = new SoftwareSubmissionViewModel{ SoftwareSubmissionID = Guid.NewGuid()};
             //Show form
-            return View();
+            return View(m);
         }
 
         [Authorize]
@@ -204,7 +205,7 @@ namespace EXPEDIT.Transactions.Controllers
         [Authorize]
         public ActionResult MyAccount(string id)
         {
-            //Show form [purchased sw, services, products, partner status, tickets, contracts]
+            //Show form [purchased sw, services, products, partner status, tickets, contracts, affiliates]
             return View();
         }
 
