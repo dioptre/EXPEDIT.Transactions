@@ -7,7 +7,7 @@
     HtmlHelper.UnobtrusiveJavaScriptEnabled = true;
     Layout.Title = T("Confirm Order").ToString();
 }
-
+<script type="text/javascript">$('#affiliateLinkedIn').css('display', 'none');</script>
 @*@using (Html.BeginFormAntiForgeryPost(Url.Action(string.Format("{0}", ViewData["TransparentRedirectUrl"]), "User", new { area = "EXPEDIT.Transactions", Controller = "User", Action = "Index" }), FormMethod.Post, new { id = "payment-form", @class = "payment-form" }))*@
 @using (Html.BeginFormAntiForgeryPost(string.Format("{0}", Model.PaymentRedirectURL), FormMethod.Post, new { id = "payment-form", @class = "payment-form" }))
 {

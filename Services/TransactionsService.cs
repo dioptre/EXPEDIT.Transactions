@@ -1074,44 +1074,47 @@ namespace EXPEDIT.Transactions.Services {
                 d.SaveChanges();
                 var table = d.GetTableName<MetaData>();
                 if (m.Files != null)
-                foreach (var f in m.Files)
                 {
-                    var filename = string.Concat(f.Value.FileName.Reverse().Take(50).Reverse()); 
-                    
-                    var file = new FileData
+                    var mediaPath = HostingEnvironment.IsHosted ? HostingEnvironment.MapPath("~/Media/") ?? "" : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Media");
+                    var storagePath = Path.Combine(mediaPath, _settings.Name);
+                    foreach (var f in m.Files)
                     {
-                        FileDataID = f.Key,
-                        TableType = table,
-                        ReferenceID = m.SoftwareSubmissionID,
-                        FileTypeID = null, //TODO give type
-                        FileName = filename,
-                        FileLength = f.Value.ContentLength,
-                        MimeType = f.Value.ContentType,
-                        VersionOwnerContactID = contact,
-                        DocumentType = ConstantsHelper.DOCUMENT_TYPE_SOFTWARE_SUBMISSION
-                    };
-                    m.FileLengths.Add(f.Key, f.Value.ContentLength);
-                    _media.GetMediaFolders(DIRECTORY_TEMP);
-                    var path = string.Format("{0}\\{1}-{2}-{3}", DIRECTORY_TEMP, m.SoftwareSubmissionID.ToString().Replace("-", ""), f.Key.ToString().Replace("-", "").Substring(15), filename.ToString().Replace("-", ""));
-                    var sf = _storage.CreateFile(path);                    
-                    using (var sw = sf.OpenWrite())
-                        f.Value.InputStream.CopyTo(sw);
-                    f.Value.InputStream.Close();
-                    try
-                    {
-                        var mediaPath = HostingEnvironment.IsHosted ? HostingEnvironment.MapPath("~/Media/") ?? "" : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Media");
-                        var storagePath = Path.Combine(mediaPath, _settings.Name);
-                        using (var dh = new DocHelper.FilterReader(Path.Combine(storagePath,path)))
-                            file.FileContent = dh.ReadToEnd();
-                    }
-                    catch { }
-                    using (var sr = sf.OpenRead())
-                        file.FileBytes = sr.ToByteArray();
-                    _storage.DeleteFile(path);
-                    file.FileChecksum = file.FileBytes.ComputeHash();
-                    d.FileDatas.AddObject(file);
-                    d.SaveChanges(); //Commit after each file
+                        var filename = string.Concat(f.Value.FileName.Reverse().Take(50).Reverse());
 
+                        var file = new FileData
+                        {
+                            FileDataID = f.Key,
+                            TableType = table,
+                            ReferenceID = m.SoftwareSubmissionID,
+                            FileTypeID = null, //TODO give type
+                            FileName = filename,
+                            FileLength = f.Value.ContentLength,
+                            MimeType = f.Value.ContentType,
+                            VersionOwnerContactID = contact,
+                            DocumentType = ConstantsHelper.DOCUMENT_TYPE_SOFTWARE_SUBMISSION
+                        };
+                        m.FileLengths.Add(f.Key, f.Value.ContentLength);
+                        _media.GetMediaFolders(DIRECTORY_TEMP);
+                        var path = string.Format("{0}\\{1}-{2}-{3}", DIRECTORY_TEMP, m.SoftwareSubmissionID.ToString().Replace("-", ""), f.Key.ToString().Replace("-", "").Substring(15), filename.ToString().Replace("-", ""));
+                        var sf = _storage.CreateFile(path);
+                        using (var sw = sf.OpenWrite())
+                            f.Value.InputStream.CopyTo(sw);
+                        f.Value.InputStream.Close();
+                        try
+                        {
+
+                            using (var dh = new DocHelper.FilterReader(Path.Combine(storagePath, path)))
+                                file.FileContent = dh.ReadToEnd();
+                        }
+                        catch { }
+                        using (var sr = sf.OpenRead())
+                            file.FileBytes = sr.ToByteArray();
+                        _storage.DeleteFile(path);
+                        file.FileChecksum = file.FileBytes.ComputeHash();
+                        d.FileDatas.AddObject(file);
+                        d.SaveChanges(); //Commit after each file
+
+                    }
                 }
 
 

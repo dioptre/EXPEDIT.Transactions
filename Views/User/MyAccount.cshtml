@@ -6,7 +6,7 @@
     HtmlHelper.UnobtrusiveJavaScriptEnabled = true;
     Layout.Title = T("Purchase").ToString();
 }
-
+<script type="text/javascript">$('#affiliateLinkedIn').css('display', 'none');</script>
 @*@using (Html.BeginFormAntiForgeryPost(Url.Action(string.Format("{0}", ViewData["TransparentRedirectUrl"]), "User", new { area = "EXPEDIT.Transactions", Controller = "User", Action = "Index" }), FormMethod.Post, new { id = "payment-form", @class = "payment-form" }))*@
 <table class="table table-striped">
 <thead>

@@ -6,6 +6,7 @@
     Layout.Title = T("Payment Result").ToString();
     bool paid = (Model.PaymentStatus & 0x1) == 0x1;
 }
+<script type="text/javascript">$('#affiliateLinkedIn').css('display', 'none');</script>
 <h1>Transaction @(paid ? "Completed" : "Failed")</h1>
 @if (paid) {
     @Html.Partial("Paid", Model)
