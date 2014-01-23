@@ -1096,7 +1096,7 @@ namespace EXPEDIT.Transactions.Services {
                         m.FileLengths.Add(f.Key, f.Value.ContentLength);
                         _media.GetMediaFolders(DIRECTORY_TEMP);
                         var path = string.Format("{0}\\{1}-{2}-{3}", DIRECTORY_TEMP, m.SoftwareSubmissionID.ToString().Replace("-", ""), f.Key.ToString().Replace("-", "").Substring(15), filename.ToString().Replace("-", ""));
-                        var sf = _storage.CreateFile(path);
+                        var sf = _storage.CreateFile(path);                        
                         using (var sw = sf.OpenWrite())
                             f.Value.InputStream.CopyTo(sw);
                         f.Value.InputStream.Close();
