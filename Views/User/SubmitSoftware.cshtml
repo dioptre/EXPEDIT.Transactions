@@ -228,32 +228,7 @@
 
 
  <script type="text/javascript">
-     // just for the demos, avoids form submit
-     jQuery.validator.setDefaults({
-         debug: false,
-         success: "valid"
-     });
-     $("#payment-form").validate({
-         rules: {
-             "customer[credit_card][expiration_date]": {
-                 required: true,
-                 dateCC: true
-             },
-             "customer[credit_card][number]": {
-                 required: true,
-                 creditcard: true
-             },
-             "customer[email]": {
-                 required: true,
-                 email2: true
-             },
-         },
-         submitHandler: function (form) {
-             form.submit();
-         }
-     });
-
-
+  
 
      // jqXHRData needed for grabbing by data object of fileupload scope
      var jqXHRData;     
