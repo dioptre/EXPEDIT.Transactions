@@ -805,13 +805,14 @@ namespace EXPEDIT.Transactions.Services {
 
         public IEnumerable<ProductViewModel> GetProducts(string text = null, Guid? supplierModelID = null, int? startRowIndex = null, int? pageSize=null)
         {
-            //var supplier = _users.ApplicationCompanyID;
+            //var ownerCompanyID = _users.ApplicationCompanyID;
+            //var supplier = "EPSOFT" etc
             var application = _users.ApplicationID;
             var directory = _media.GetPublicUrl(@"EXPEDIT.Transactions");
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new XODBC(_users.ApplicationConnectionString, null);
-                return (from o in d.E_SP_GetProductModels(text, application, null, ConstantsHelper.DEVICE_TYPE_SOFTWARE, supplierModelID, startRowIndex, pageSize) 
+                return (from o in d.E_SP_GetProductModels(text, application, null, null, ConstantsHelper.DEVICE_TYPE_SOFTWARE, supplierModelID, startRowIndex, pageSize) 
                         select new ProductViewModel { 
                             SupplierModelID = o.SupplierModelID,
                             ModelID = o.ModelID, 

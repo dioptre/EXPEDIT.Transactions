@@ -18,7 +18,7 @@
 <td><img src="@p.Thumbnail" alt="" style="padding: 4px; line-height: 19.5px; border: 1px solid #ddd;" width="60" height="60"></td>
 <td>
 <h2>@p.Title <small>@p.Subtitle</small></h2>
-<p>@p.HTML</p>
+<p>@Html.Raw(p.HTML)</p>
 <p><a href="/share/go/@p.UrlInternal">...more information</a></p>
 <p style="text-align: right;">@Html.Raw(string.Format("{0} {1:f2} {2} ({3})",p.CurrencyPrefix,p.PricePerUnit,p.CurrencyPostfix, p.ProductUnitName))</p>
 <p style="text-align: right;">@Html.Raw(p.PricePerUnit == 0 && p.FreeDownloadID.HasValue ? 
