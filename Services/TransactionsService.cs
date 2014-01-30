@@ -323,8 +323,11 @@ namespace EXPEDIT.Transactions.Services {
                 {
                     Guid addressID = Guid.NewGuid();
                     m = new Address { AddressID = addressID };
+                    m.AddressName = order.PaymentCompany;
                     m.Street = order.PaymentStreet;
                     m.Extended = order.PaymentStreetExtended;
+                    m.Phone = order.PaymentPhone;
+                    m.Country = order.PaymentCountry;
                     m.City = order.PaymentLocality;
                     m.State = order.PaymentRegion;
                     m.Postcode = order.PaymentPostcode;
@@ -802,13 +805,13 @@ namespace EXPEDIT.Transactions.Services {
 
         public IEnumerable<ProductViewModel> GetProducts(string text = null, Guid? supplierModelID = null, int? startRowIndex = null, int? pageSize=null)
         {
-            var supplier = _users.ApplicationCompanyID;
+            //var supplier = _users.ApplicationCompanyID;
             var application = _users.ApplicationID;
             var directory = _media.GetPublicUrl(@"EXPEDIT.Transactions");
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new XODBC(_users.ApplicationConnectionString, null);
-                return (from o in d.E_SP_GetProductModels(text, application, supplier, ConstantsHelper.DEVICE_TYPE_SOFTWARE, supplierModelID, startRowIndex, pageSize) 
+                return (from o in d.E_SP_GetProductModels(text, application, null, ConstantsHelper.DEVICE_TYPE_SOFTWARE, supplierModelID, startRowIndex, pageSize) 
                         select new ProductViewModel { 
                             SupplierModelID = o.SupplierModelID,
                             ModelID = o.ModelID, 
@@ -817,7 +820,7 @@ namespace EXPEDIT.Transactions.Services {
                             PricePerUnit = o.PricePerUnit, 
                             PriceUnitID = o.PriceUnitID,
                             CostUnit = o.CostUnit,
-                            SupplierID = supplier,
+                            SupplierID = o.SupplierID,
                             Title = o.Title,
                             Subtitle = o.Subtitle,
                             HTML = o.HTML,
