@@ -36,6 +36,7 @@ using RestSharp;
 using System.Security.Cryptography;
 using System.Web.Hosting;
 using Orchard.Environment.Configuration;
+using EXPEDIT.Licence.Helpers;
 
 namespace EXPEDIT.Transactions.Services {
     

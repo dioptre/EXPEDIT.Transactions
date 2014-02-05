@@ -216,6 +216,10 @@
       <Project>{380151d5-c92f-404a-8b89-b788f574d228}</Project>
       <Name>XODB.Module.BusinessObjects</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\..\..\EXPEDIT.Licence\EXPEDIT.Licence.csproj">
+      <Project>{359608d7-fafe-40e9-90c6-bd6df1c0fdcc}</Project>
+      <Name>EXPEDIT.Licence</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Orchard\Orchard.Framework.csproj">
       <Project>{2D1D92BB-4555-4CBE-8D0E-63563D6CE4C6}</Project>
       <Name>Orchard.Framework</Name>
