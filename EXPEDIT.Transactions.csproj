@@ -30,7 +30,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;XODB</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;NKD</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
@@ -48,7 +48,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Braintree-2.27.0">
-      <HintPath>..\..\..\packages\Braintree.2.27.0\lib\Braintree-2.27.0.dll</HintPath>
+      <HintPath>..\..\..\..\lib\braintree\Braintree-2.27.0.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.Persistent.Base.v13.1, Version=13.1.7.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -56,17 +56,17 @@
     </Reference>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\packages\EntityFramework.6.0.1\lib\net45\EntityFramework.dll</HintPath>
+      <HintPath>..\..\..\..\lib\EntityFramework\EntityFramework.dll</HintPath>
     </Reference>
     <Reference Include="EntityFramework.Extended">
       <HintPath>..\..\..\..\lib\EntityFramework.Extended\Build\Release\net45\EntityFramework.Extended.dll</HintPath>
     </Reference>
     <Reference Include="ImpromptuInterface, Version=6.1.3.0, Culture=neutral, PublicKeyToken=0b1781c923b2975b, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\lib\impromptu-interface-bin\ImpromptuInterface.dll</HintPath>
+      <HintPath>..\..\..\..\lib\impromptu\ImpromptuInterface.dll</HintPath>
     </Reference>
     <Reference Include="ImpromptuInterface.MVVM">
-      <HintPath>..\..\..\..\lib\impromptu-interface-bin\ImpromptuInterface.MVVM.dll</HintPath>
+      <HintPath>..\..\..\..\lib\impromptu\ImpromptuInterface.MVVM.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Newtonsoft.Json">
@@ -212,13 +212,17 @@
     <Content Include="Styles\fonts\glyphicons-halflings-regular.woff" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\..\..\..\eodb\src\main\XODB.Module.BusinessObjects\XODB.Module.BusinessObjects.csproj">
-      <Project>{380151d5-c92f-404a-8b89-b788f574d228}</Project>
-      <Name>XODB.Module.BusinessObjects</Name>
+    <ProjectReference Include="..\..\..\..\..\..\..\..\crednexus\src\main\CNX.Shared\CNX.Shared.csproj">
+      <Project>{b303b44d-33f4-453c-bcf9-7a57bdd9b25b}</Project>
+      <Name>CNX.Shared</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\..\..\EXPEDIT.Licence\EXPEDIT.Licence.csproj">
-      <Project>{359608d7-fafe-40e9-90c6-bd6df1c0fdcc}</Project>
-      <Name>EXPEDIT.Licence</Name>
+    <ProjectReference Include="..\..\..\..\..\NKD.Extensions\NKD.Extensions.csproj">
+      <Project>{d52e5735-cd85-4a8d-a0c2-fb84ddbd222b}</Project>
+      <Name>NKD.Extensions</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\..\NKD.Module.BusinessObjects\NKD.Module.BusinessObjects.csproj">
+      <Project>{380151d5-c92f-404a-8b89-b788f574d228}</Project>
+      <Name>NKD.Module.BusinessObjects</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Orchard\Orchard.Framework.csproj">
       <Project>{2D1D92BB-4555-4CBE-8D0E-63563D6CE4C6}</Project>
@@ -232,13 +236,13 @@
       <Project>{224cf035-3491-449e-8dcb-d26797ea10e9}</Project>
       <Name>EXPEDIT.Share</Name>
     </ProjectReference>
+    <ProjectReference Include="..\NKD\NKD.csproj">
+      <Project>{1b5a2a6b-28e0-4a54-9ca4-147c925f3bbb}</Project>
+      <Name>NKD</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Orchard.Media\Orchard.Media.csproj">
       <Project>{d9a7b330-cd22-4da1-a95a-8de1982ad8eb}</Project>
       <Name>Orchard.Media</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\XODB\XODB.csproj">
-      <Project>{1b5a2a6b-28e0-4a54-9ca4-147c925f3bbb}</Project>
-      <Name>XODB</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

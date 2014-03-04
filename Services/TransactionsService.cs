@@ -18,25 +18,26 @@ using Orchard.Messaging.Services;
 using Orchard.Logging;
 using Orchard.Tasks.Scheduling;
 using Orchard.Data;
-#if XODB
-using XODB.Module.BusinessObjects;
+#if NKD
+using NKD.Module.BusinessObjects;
 #else
 using EXPEDIT.Utils.DAL.Models;
 #endif
 using EXPEDIT.Transactions.ViewModels;
-using XODB.Services;
+using NKD.Services;
 using Orchard.Media.Services;
 using EXPEDIT.Transactions.Services.Payments;
 using EntityFramework.Extensions;
 using Newtonsoft.Json;
 using EXPEDIT.Share.Helpers;
-using XODB.Helpers;
-using XODB.Models;
+using NKD.Helpers;
+using NKD.Models;
 using RestSharp;
 using System.Security.Cryptography;
 using System.Web.Hosting;
 using Orchard.Environment.Configuration;
-using EXPEDIT.Licence.Helpers;
+using lh = CNX.Shared.Helpers;
+
 
 namespace EXPEDIT.Transactions.Services {
     
@@ -98,7 +99,7 @@ namespace EXPEDIT.Transactions.Services {
             var orderID = order.OrderID;
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
-                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var d = new NKDC(_users.ApplicationConnectionString, null);
                 var contracts = (from o in d.SupplyContractConditions where o.Supply.CustomerPurchaseOrderID == orderID && o.Version == 0 && o.VersionDeletedBy == null
                              select o);
                 foreach (var c in contracts)
@@ -122,7 +123,7 @@ namespace EXPEDIT.Transactions.Services {
             var antiForgeryKey = order.PaymentAntiForgeryKey;
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
-                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var d = new NKDC(_users.ApplicationConnectionString, null);
                 var md = (from o in d.MetaDatas 
                           where o.MetaDataID==antiForgeryKey.Value
                           && o.MetaDataType == ConstantsHelper.METADATA_ANTIFORGERY 
@@ -139,7 +140,7 @@ namespace EXPEDIT.Transactions.Services {
                 //Force Update Contact on Server Side
                 using (new TransactionScope(TransactionScopeOption.Suppress))
                 {
-                    var d = new XODBC(_users.ApplicationConnectionString, null);
+                    var d = new NKDC(_users.ApplicationConnectionString, null);
                     d.ApplicationPaymentProviderContacts.Where(f => f.ContactID == contactID).Delete();
                 }
             }
@@ -151,7 +152,7 @@ namespace EXPEDIT.Transactions.Services {
         {
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
-                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var d = new NKDC(_users.ApplicationConnectionString, null);
                 var items = (from o in d.SupplyItems where o.Supply.CustomerPurchaseOrderID==orderID && o.Version==0 && o.VersionDeletedBy == null 
                              select new OrderProductViewModel { 
                                  SupplierModelID = o.SupplierModelID, 
@@ -170,7 +171,7 @@ namespace EXPEDIT.Transactions.Services {
         {
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
-                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var d = new NKDC(_users.ApplicationConnectionString, null);
                 return (from po in d.PurchaseOrders where po.PurchaseOrderID==orderID
                  join s in d.Supplies on po.PurchaseOrderID equals s.CustomerPurchaseOrderID
                  join i in d.Invoices on s.SupplyID equals i.SupplyID
@@ -184,7 +185,7 @@ namespace EXPEDIT.Transactions.Services {
         {
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
-                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var d = new NKDC(_users.ApplicationConnectionString, null);
                 return (from po in d.PurchaseOrders
                         where po.PurchaseOrderID == orderID
                         join s in d.Supplies on po.PurchaseOrderID equals s.CustomerPurchaseOrderID
@@ -199,7 +200,7 @@ namespace EXPEDIT.Transactions.Services {
             var contact = _users.ContactID;
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
-                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var d = new NKDC(_users.ApplicationConnectionString, null);
                 var ppProducts = order.Products.Where(f => f.PaymentProviderProductID != null).Select(f => f.PaymentProviderProductID.Value).ToArray();
                 order.PaymentCustomerID = (from o in d.ApplicationPaymentProviderProducts
                                            join p in d.ApplicationPaymentProviderContacts on o.ApplicationPaymentProviderID equals p.ApplicationPaymentProviderID
@@ -253,7 +254,7 @@ namespace EXPEDIT.Transactions.Services {
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 //Update customer id
-                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var d = new NKDC(_users.ApplicationConnectionString, null);
                 var pc = (from o in d.ApplicationPaymentProviderProducts
                           join p in d.ApplicationPaymentProviderContacts on o.ApplicationPaymentProviderID equals p.ApplicationPaymentProviderID
                           where ppProducts.Contains(o.ApplicationPaymentProviderProductID)
@@ -369,14 +370,14 @@ namespace EXPEDIT.Transactions.Services {
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 //Update customer id
-                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var d = new NKDC(_users.ApplicationConnectionString, null);
                 //var transaction = d.BeginTransaction(System.Data.IsolationLevel.ReadCommitted); //TODO implement transactions
                 PurchaseOrder po = (from o in d.PurchaseOrders where order.OrderID.HasValue && o.PurchaseOrderID == order.OrderID select o).Single();
                 Supply s = (from o in d.Supplies where o.CustomerPurchaseOrderID == po.PurchaseOrderID select o).Single();
                 var oldItems = (from o in d.SupplyItems.Include("UnitModel") where o.Supply.CustomerPurchaseOrderID == po.PurchaseOrderID select o).ToList();
                 Invoice i = new Invoice
                 { 
-                    InvoiceID = GuidHelper.NewComb() ,
+                    InvoiceID = lh.GuidHelper.NewComb() ,
                     CurrencyID = oldItems.Any() ? oldItems.First().CurrencyID : default(Guid?),
                     CustomerContactID = contact,
                     CustomerAddressID = order.PaymentAddressID,
@@ -660,7 +661,7 @@ namespace EXPEDIT.Transactions.Services {
             var currentTime = DateTime.UtcNow;
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
-                var d = new XODBC(_users.ApplicationConnectionString, null, false);
+                var d = new NKDC(_users.ApplicationConnectionString, null, false);
                 //PurchaseOrder
                 PurchaseOrder po = (from o in d.PurchaseOrders where order.OrderID.HasValue && o.PurchaseOrderID == order.OrderID select o).SingleOrDefault();
                 if (po == null)
@@ -792,7 +793,7 @@ namespace EXPEDIT.Transactions.Services {
             var contact = _users.ContactID;
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
-                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var d = new NKDC(_users.ApplicationConnectionString, null);
                 return (from o in d.E_SP_GetDownloads(orderID, contact)
                         select new DownloadViewModel
                         {
@@ -812,7 +813,7 @@ namespace EXPEDIT.Transactions.Services {
             var directory = _media.GetPublicUrl(@"EXPEDIT.Transactions");
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
-                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var d = new NKDC(_users.ApplicationConnectionString, null);
                 return (from o in d.E_SP_GetProductModels(text, application, null, null, ConstantsHelper.DEVICE_TYPE_SOFTWARE, supplierModelID, startRowIndex, pageSize) 
                         select new ProductViewModel { 
                             SupplierModelID = o.SupplierModelID,
@@ -866,7 +867,7 @@ namespace EXPEDIT.Transactions.Services {
             var supplier = _users.ApplicationCompanyID;
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
-                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var d = new NKDC(_users.ApplicationConnectionString, null);
                 return (from o in d.E_SP_GetProductContractConditions(string.Join(",", referenceIDs), supplier, false, true, false)
                          select new ContractConditionViewModel
                          {
@@ -886,7 +887,7 @@ namespace EXPEDIT.Transactions.Services {
             
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
-                var d = new XODBC(_users.ApplicationConnectionString, null, false);
+                var d = new NKDC(_users.ApplicationConnectionString, null, false);
                 string refTable = null;
                 if (d.DictionaryModels.Any(f => f.ModelID == productID))
                     refTable = d.GetTableName<DictionaryModel>();
@@ -904,14 +905,14 @@ namespace EXPEDIT.Transactions.Services {
         {
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
-                var d = new XODBC(_users.ApplicationConnectionString, null, false);               
+                var d = new NKDC(_users.ApplicationConnectionString, null, false);               
                 IncrementStatistic(d, supplierModelID, d.GetTableName<SupplierModel>(), ConstantsHelper.STAT_NAME_CLICKS_BUY);
                 IncrementStatistic(d, modelID, d.GetTableName<DictionaryModel>(), ConstantsHelper.STAT_NAME_CLICKS_BUY);
                 d.SaveChanges();
             }
         }        
 
-        public void IncrementStatistic(XODBC d, Guid referenceID, string referenceTable, string statName)
+        public void IncrementStatistic(NKDC d, Guid referenceID, string referenceTable, string statName)
         {
             var stat = (from o in d.StatisticDatas
                         where o.ReferenceID == referenceID && o.TableType == referenceTable
@@ -932,7 +933,7 @@ namespace EXPEDIT.Transactions.Services {
             var contact = _users.GetContact(_users.Username);
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {                
-                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var d = new NKDC(_users.ApplicationConnectionString, null);
                 Contract contract = null;
                 if (contractID.HasValue)
                     contract = (from o in d.Contracts where o.ContractID == contractID.Value && o.VersionDeletedBy == null && o.Version == 0 select o).FirstOrDefault();
@@ -985,7 +986,7 @@ namespace EXPEDIT.Transactions.Services {
             var contact = _users.GetContact(_users.Username);
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
-                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var d = new NKDC(_users.ApplicationConnectionString, null);
                 var twoStep = (from o in d.TwoStepAuthenticationDatas where o.TwoStepAuthenticationDataID == m.VerificationID && o.VersionDeletedBy == null && o.Version == 0 select o).Single();
                 if (m.VerificationCode != twoStep.VerificationCode || string.IsNullOrWhiteSpace(twoStep.VerificationCode))
                     return false;
@@ -1011,7 +1012,7 @@ namespace EXPEDIT.Transactions.Services {
              using (new TransactionScope(TransactionScopeOption.Suppress))
              {
                  var twoStepID = verify.VerificationID;
-                 var d = new XODBC(_users.ApplicationConnectionString, null);
+                 var d = new NKDC(_users.ApplicationConnectionString, null);
                  var twoStep = (from o in d.TwoStepAuthenticationDatas where o.TwoStepAuthenticationDataID == twoStepID && o.VersionDeletedBy == null && o.Version == 0 select o).Single();
                  var client = new RestClient("https://api.smsglobal.com");
                  //System.Net.ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
@@ -1051,7 +1052,7 @@ namespace EXPEDIT.Transactions.Services {
             var contact = _users.ContactID;
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
-                var d = new XODBC(_users.ApplicationConnectionString, null);
+                var d = new NKDC(_users.ApplicationConnectionString, null);
                 //First check if any data is not owned by me
                 if ((from o in d.MetaDatas where o.MetaDataID==m.SoftwareSubmissionID && o.VersionOwnerContactID!=contact.Value select o).Any())
                     return false;

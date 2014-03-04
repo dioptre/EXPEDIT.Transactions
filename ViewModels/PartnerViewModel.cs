@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Web.Mvc;
 using System;
 using System.Collections.Generic;
-using XODB.Models;
+using NKD.Models;
 using EXPEDIT.Share.Helpers;
 namespace EXPEDIT.Transactions.ViewModels
 {

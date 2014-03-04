@@ -3,11 +3,11 @@ using System.ComponentModel.DataAnnotations;
 using System.Web.Mvc;
 using System;
 using System.Collections.Generic;
-using XODB.Models;
+using NKD.Models;
 using EXPEDIT.Share.Helpers;
 using System.Web;
 using Newtonsoft.Json;
-using XODB.Module.BusinessObjects;
+using NKD.Module.BusinessObjects;
 
 namespace EXPEDIT.Transactions.ViewModels
 {

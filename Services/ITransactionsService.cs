@@ -5,7 +5,7 @@ using System.Web;
 using Orchard;
 using System.ServiceModel;
 using EXPEDIT.Transactions.ViewModels;
-using XODB.Models;
+using NKD.Models;
 
 namespace EXPEDIT.Transactions.Services
 {
