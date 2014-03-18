@@ -19,7 +19,7 @@ namespace EXPEDIT.Transactions.Services
          bool UpdatePartnership(PartnerViewModel m, string IPAddress);
 
          [OperationContract]
-         bool SendTwoStepAuthentication(ref IVerifyMobile verification);
+         bool SendTwoStepAuthentication(ref VerifyMobileModel verification);
 
          [OperationContract]
          void MakePayment(ref OrderViewModel order);

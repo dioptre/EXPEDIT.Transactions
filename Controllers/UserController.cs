@@ -145,7 +145,7 @@ namespace EXPEDIT.Transactions.Controllers
         [Authorize]
         public ActionResult Verify(string id, string jsonRequest)
         {
-            var verify = JsonConvert.DeserializeObject<ExpandoObject>(jsonRequest).ActLike<IVerifyMobile>();
+            var verify = JsonConvert.DeserializeObject<VerifyMobileModel>(jsonRequest);
             verify.Sent = DateTime.Now;
             verify.VerificationID = new Guid(id);
             if (!_transactions.SendTwoStepAuthentication(ref verify))

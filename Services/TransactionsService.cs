@@ -18,11 +18,7 @@ using Orchard.Messaging.Services;
 using Orchard.Logging;
 using Orchard.Tasks.Scheduling;
 using Orchard.Data;
-#if NKD
 using NKD.Module.BusinessObjects;
-#else
-using EXPEDIT.Utils.DAL.Models;
-#endif
 using EXPEDIT.Transactions.ViewModels;
 using NKD.Services;
 using Orchard.Media.Services;
@@ -1000,7 +996,7 @@ namespace EXPEDIT.Transactions.Services {
         }
 
 
-        public bool SendTwoStepAuthentication(ref IVerifyMobile verify)
+        public bool SendTwoStepAuthentication(ref VerifyMobileModel verify)
         {
             //First check mobile
             if (string.IsNullOrWhiteSpace(verify.Mobile))
@@ -1020,13 +1016,16 @@ namespace EXPEDIT.Transactions.Services {
                  var request = new RestRequest("/v1/sms/", Method.POST);
                  var id = "80d249a9eecc9232fb6ed0f843e7f230";
                  var secret = "6239e342d7abb35c853ad33e65931f64";
-                 var timestamp = string.Format("{0}", DateHelper.NowToUnixTimestamp());
+                 var timestamp = string.Format("{0:0}", DateHelper.Timestamp);
                  var nonce = Guid.NewGuid().ToString().Replace("-", "").Substring(0, 32);
                  string hash = null;
-                 using (HMACSHA256 hmac = new HMACSHA256(Convert.FromBase64String(secret)))
-                     hash = Convert.ToBase64String(hmac.ComputeHash(System.Text.Encoding.ASCII.GetBytes(string.Format("{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n\n", timestamp, nonce, "POST", "/v1/sms/", "api.smsglobal.com", "443", null))));
-                 client.Authenticator = new OAuth2AuthorizationRequestHeaderAuthenticator(string.Format("id=\"{0}\", ts=\"{1}\", nonce=\"{2}\", mac=\"{3}\"", id, timestamp, nonce, hash), "MAC");
-                 client.PreAuthenticate = true;
+                 var raw = System.Text.Encoding.ASCII.GetBytes(string.Format("{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n\n", timestamp, nonce, "POST", "/v1/sms/", "api.smsglobal.com", "443", null));
+                 using (HMACSHA256 hmac = new HMACSHA256(System.Text.Encoding.ASCII.GetBytes(secret)))
+                     hash = Convert.ToBase64String(hmac.ComputeHash(raw, 0, raw.Length));
+                 var mac = string.Format("MAC id=\"{0}\", ts=\"{1}\", nonce=\"{2}\", mac=\"{3}\"", id, timestamp, nonce, hash);
+                 //client.Authenticator = new OAuth2AuthorizationRequestHeaderAuthenticator();
+                 //client.PreAuthenticate = true;
+                 request.AddHeader("Authorization", mac);
                  request.AddParameter("origin", "61400970789");
                  var destination = verify.Mobile.Replace("+","");
                  request.AddParameter("destination", destination);
@@ -1039,9 +1038,8 @@ namespace EXPEDIT.Transactions.Services {
                  twoStep.Mobile = destination;
                  twoStep.Contact.DefaultMobile = verify.Mobile;
                  d.SaveChanges();
-
+                 return true;
              }
-             return false;
 
         }
 

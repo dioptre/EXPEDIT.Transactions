@@ -7,7 +7,7 @@ using NKD.Models;
 using EXPEDIT.Share.Helpers;
 namespace EXPEDIT.Transactions.ViewModels
 {
-    public class PartnerViewModel : IVerifyMobile
+    public class PartnerViewModel : IVerify
     {
 
         public Guid ParentContractID { get { return ConstantsHelper.CONTRACT_PARTNER; } }
