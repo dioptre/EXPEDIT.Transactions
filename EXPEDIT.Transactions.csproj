@@ -244,9 +244,18 @@
       <Project>{d9a7b330-cd22-4da1-a95a-8de1982ad8eb}</Project>
       <Name>Orchard.Media</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Orchard.Roles\Orchard.Roles.csproj">
+      <Project>{d10ad48f-407d-4db5-a328-173ec7cb010f}</Project>
+      <Name>Orchard.Roles</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Orchard.Users\Orchard.Users.csproj">
+      <Project>{79aed36e-abd0-4747-93d3-8722b042454b}</Project>
+      <Name>Orchard.Users</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controllers\UserController.cs" />
+    <Compile Include="Permissions.cs" />
     <Compile Include="ResourceManifest.cs" />
     <Compile Include="Route.cs" />
     <Compile Include="Services\ITransactionsService.cs" />

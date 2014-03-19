@@ -10,6 +10,7 @@ using Orchard.Localization;
 using Orchard.Security;
 using Orchard.Settings;
 using Orchard.Validation;
+using Orchard.Roles.Services;
 using Orchard;
 using System.Security.Principal;
 using System.Text.RegularExpressions;
@@ -33,7 +34,8 @@ using System.Security.Cryptography;
 using System.Web.Hosting;
 using Orchard.Environment.Configuration;
 using lh = CNX.Shared.Helpers;
-
+using Orchard.Users.Models;
+using Orchard.Roles.Models;
 
 namespace EXPEDIT.Transactions.Services {
     
@@ -49,7 +51,11 @@ namespace EXPEDIT.Transactions.Services {
         private readonly IMediaService _media;
         private readonly IPayment _payment;
         private readonly IStorageProvider _storage;
+        private readonly IRoleService _roles;
         private ShellSettings _settings;
+        private readonly IRepository<UserPartRecord> _userRepository;
+        private readonly IRepository<UserRolesPartRecord> _userRolesRepository;
+
         public ILogger Logger { get; set; }
 
         public TransactionsService(
@@ -61,7 +67,10 @@ namespace EXPEDIT.Transactions.Services {
             IMediaService media,
             IPayment payment,
             IStorageProvider storage,
-            ShellSettings shellSettings)
+            ShellSettings shellSettings,
+            IRoleService roles,
+            IRepository<UserPartRecord> userRepository,
+            IRepository<UserRolesPartRecord> userRolesRepository)
         {
             _orchardServices = orchardServices;
             _contentManager = contentManager;
@@ -74,6 +83,9 @@ namespace EXPEDIT.Transactions.Services {
             _payment = payment;
             _storage = storage;
             _settings = shellSettings;
+            _roles = roles;
+            _userRepository = userRepository;
+            _userRolesRepository = userRolesRepository;
         }
 
         public Localizer T { get; set; }
@@ -984,15 +996,36 @@ namespace EXPEDIT.Transactions.Services {
             {
                 var d = new NKDC(_users.ApplicationConnectionString, null);
                 var twoStep = (from o in d.TwoStepAuthenticationDatas where o.TwoStepAuthenticationDataID == m.VerificationID && o.VersionDeletedBy == null && o.Version == 0 select o).Single();
+                if (string.IsNullOrWhiteSpace(twoStep.Contact.Firstname))
+                    twoStep.Contact.Firstname = m.Firstname;
+                if (string.IsNullOrWhiteSpace(twoStep.Contact.Surname))
+                    twoStep.Contact.Surname = m.Lastname;
+                if (twoStep.Contact.Firstname != m.Firstname || twoStep.Contact.Surname != m.Lastname)
+                    return false;
                 if (m.VerificationCode != twoStep.VerificationCode || string.IsNullOrWhiteSpace(twoStep.VerificationCode))
                     return false;
                 twoStep.Verified = DateTime.UtcNow;
                 twoStep.RequestedByIP = IPAddress;
                 var contract = (from o in d.Contracts where o.ContractID == m.ContractID && o.VersionDeletedBy == null && o.Version == 0 select o).Single();
                 contract.Started = DateTime.UtcNow;
-                d.SaveChanges();
-                return true;
+                d.SaveChanges();                
             }
+            
+            var userPartRecord = _userRepository.Get(record => record.UserName == _users.Username);
+            var roleRecord = _roles.GetRoleByName("Partner");
+            if (roleRecord == null)
+            {
+                _roles.CreateRole("Partner");
+                _roles.CreatePermissionForRole("Partner", "Partner");
+                _roles.CreatePermissionForRole("Partner", "PartnerSoftware");
+                roleRecord = _roles.GetRoleByName("Partner");
+            }
+            if (userPartRecord == null)
+                return false;
+            var existingAssociation = _userRolesRepository.Get(record => record.UserId == userPartRecord.Id && record.Role.Id == roleRecord.Id);
+            if (existingAssociation == null)
+                _userRolesRepository.Create(new UserRolesPartRecord { Role = roleRecord, UserId = userPartRecord.Id });
+            return true;
         }
 
 
@@ -1001,7 +1034,7 @@ namespace EXPEDIT.Transactions.Services {
             //First check mobile
             if (string.IsNullOrWhiteSpace(verify.Mobile))
                 return false;
-            verify.Mobile = verify.Mobile.Replace(" ","");
+            verify.Mobile = verify.Mobile.Replace(" ","").Replace("-","");
             if (!verify.Mobile.IsMobile())
                 return false;
                     
@@ -1010,36 +1043,78 @@ namespace EXPEDIT.Transactions.Services {
                  var twoStepID = verify.VerificationID;
                  var d = new NKDC(_users.ApplicationConnectionString, null);
                  var twoStep = (from o in d.TwoStepAuthenticationDatas where o.TwoStepAuthenticationDataID == twoStepID && o.VersionDeletedBy == null && o.Version == 0 select o).Single();
+                 //Don't repeat within a minute
+                 if (twoStep.Sent.HasValue && twoStep.Sent.Value.AddMinutes(2) > DateTime.UtcNow)
+                     return true;
                  var client = new RestClient("https://api.smsglobal.com");
                  //System.Net.ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
                  // client.Authenticator = new HttpBasicAuthenticator(username, password);
                  var request = new RestRequest("/v1/sms/", Method.POST);
-                 var id = "80d249a9eecc9232fb6ed0f843e7f230";
-                 var secret = "6239e342d7abb35c853ad33e65931f64";
                  var timestamp = string.Format("{0:0}", DateHelper.Timestamp);
                  var nonce = Guid.NewGuid().ToString().Replace("-", "").Substring(0, 32);
                  string hash = null;
                  var raw = System.Text.Encoding.ASCII.GetBytes(string.Format("{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n\n", timestamp, nonce, "POST", "/v1/sms/", "api.smsglobal.com", "443", null));
-                 using (HMACSHA256 hmac = new HMACSHA256(System.Text.Encoding.ASCII.GetBytes(secret)))
+                 using (HMACSHA256 hmac = new HMACSHA256(System.Text.Encoding.ASCII.GetBytes(ConstantsHelper.APP_VERIFY_SECRET)))
                      hash = Convert.ToBase64String(hmac.ComputeHash(raw, 0, raw.Length));
-                 var mac = string.Format("MAC id=\"{0}\", ts=\"{1}\", nonce=\"{2}\", mac=\"{3}\"", id, timestamp, nonce, hash);
+                 var mac = string.Format("MAC id=\"{0}\", ts=\"{1}\", nonce=\"{2}\", mac=\"{3}\"", ConstantsHelper.APP_VERIFY_ID, timestamp, nonce, hash);
                  //client.Authenticator = new OAuth2AuthorizationRequestHeaderAuthenticator();
                  //client.PreAuthenticate = true;
                  request.AddHeader("Authorization", mac);
-                 request.AddParameter("origin", "61400970789");
-                 var destination = verify.Mobile.Replace("+","");
-                 request.AddParameter("destination", destination);
-                 request.AddParameter("message", string.Format("Your MiningAppStore code is {0}", twoStep.VerificationCode));
+                 request.AddParameter("origin", ConstantsHelper.APP_VERIFY_REPLYTO);
+                 //var destination = verify.Mobile.Replace("+","");
+                 request.AddParameter("destination", verify.Mobile); // destination);
+                 request.AddParameter("message", string.Format("{0} {1}", ConstantsHelper.APP_VERIFY_PREFIX, twoStep.VerificationCode));
                  //IRestResponse<Person> response2 = client.Execute<Person>(request);
                  IRestResponse response = client.Execute(request);
                  if (response.StatusCode != System.Net.HttpStatusCode.Created)
                      return false;
                  twoStep.Sent = DateTime.UtcNow;
-                 twoStep.Mobile = destination;
+                 twoStep.Mobile = verify.Mobile;
                  twoStep.Contact.DefaultMobile = verify.Mobile;
                  d.SaveChanges();
                  return true;
              }
+
+        }
+
+        public bool ReceiveTwoStepAuthentication(string id)
+        {
+
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                //var twoStepID = verify.VerificationID;
+                //var d = new NKDC(_users.ApplicationConnectionString, null);
+                //var twoStep = (from o in d.TwoStepAuthenticationDatas where o.TwoStepAuthenticationDataID == twoStepID && o.VersionDeletedBy == null && o.Version == 0 select o).Single();
+                //var client = new RestClient("https://api.smsglobal.com");
+                ////System.Net.ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
+                //// client.Authenticator = new HttpBasicAuthenticator(username, password);
+                //var request = new RestRequest("/v1/sms/", Method.POST);
+                //var id = "80d249a9eecc9232fb6ed0f843e7f230";
+                //var secret = "6239e342d7abb35c853ad33e65931f64";
+                //var timestamp = string.Format("{0:0}", DateHelper.Timestamp);
+                //var nonce = Guid.NewGuid().ToString().Replace("-", "").Substring(0, 32);
+                //string hash = null;
+                //var raw = System.Text.Encoding.ASCII.GetBytes(string.Format("{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n\n", timestamp, nonce, "POST", "/v1/sms/", "api.smsglobal.com", "443", null));
+                //using (HMACSHA256 hmac = new HMACSHA256(System.Text.Encoding.ASCII.GetBytes(secret)))
+                //    hash = Convert.ToBase64String(hmac.ComputeHash(raw, 0, raw.Length));
+                //var mac = string.Format("MAC id=\"{0}\", ts=\"{1}\", nonce=\"{2}\", mac=\"{3}\"", id, timestamp, nonce, hash);
+                ////client.Authenticator = new OAuth2AuthorizationRequestHeaderAuthenticator();
+                ////client.PreAuthenticate = true;
+                //request.AddHeader("Authorization", mac);
+                //request.AddParameter("origin", "61400970789");
+                //var destination = verify.Mobile.Replace("+", "");
+                //request.AddParameter("destination", destination); // destination);
+                //request.AddParameter("message", string.Format("Your MiningAppStore code is {0}", twoStep.VerificationCode));
+                ////IRestResponse<Person> response2 = client.Execute<Person>(request);
+                //IRestResponse response = client.Execute(request);
+                //if (response.StatusCode != System.Net.HttpStatusCode.Created)
+                //    return false;
+                //twoStep.Sent = DateTime.UtcNow;
+                //twoStep.Mobile = destination;
+                //twoStep.Contact.DefaultMobile = verify.Mobile;
+                //d.SaveChanges();
+                return true;
+            }
 
         }
 

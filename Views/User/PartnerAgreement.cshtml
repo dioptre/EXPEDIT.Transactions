@@ -16,13 +16,27 @@
         <br /><br />
     </div>
     <div class="editor-label">
-        Authorised by:
+        <strong>Authorised by:</strong>
+    </div>
+    <div class="editor-label">
+        Firstname:
     </div>
     <div class="editor-field">
-        @Html.TextBoxFor(m => m.Firstname, new { @readonly = true })
+        @if (string.IsNullOrWhiteSpace(Model.Firstname)) {
+            @Html.TextBoxFor(m => m.Firstname)
+        } else {
+            @Html.TextBoxFor(m => m.Firstname, new { @readonly = true })
+        }
+    </div>
+    <div class="editor-label">
+        Surname:
     </div>
     <div class="editor-field">
-        @Html.TextBoxFor(m => m.Lastname,  new { @readonly = true })
+        @if (string.IsNullOrWhiteSpace(Model.Lastname)) {
+            @Html.TextBoxFor(m => m.Lastname)
+        } else {
+            @Html.TextBoxFor(m => m.Lastname, new { @readonly = true })
+        }
     </div>
     <div class="editor-label">
         @Html.LabelFor(m => m.Mobile)
@@ -36,7 +50,7 @@
     <div class="editor-field">
         @Html.TextBoxFor(m => m.VerificationCode, new { Style = "float: inherit;display: none;" })
     </div>
-    @Html.HiddenFor(m => m.VerificationID)
+    @Html.HiddenFor(m => m.TwoStepID)
     @Html.HiddenFor(m => m.ContractID)
     <input id="btnPartnerAgreementAgreed" type="submit" value="Agree to Terms" style="display:none;" disabled/>
 </fieldset>

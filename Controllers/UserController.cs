@@ -137,7 +137,11 @@ namespace EXPEDIT.Transactions.Controllers
             //Save agreement
             if (_transactions.UpdatePartnership(m, Request.GetIPAddress()))
                 return new RedirectResult(System.Web.VirtualPathUtility.ToAbsolute("~/PartnerAgreementConfirmed"));
-            return View(m);
+            var p = _transactions.GetPartnership();
+            p.Firstname = m.Firstname;
+            p.Lastname = m.Lastname;
+            p.Mobile = m.Mobile;
+            return View(p);
         }
 
 
@@ -151,6 +155,19 @@ namespace EXPEDIT.Transactions.Controllers
             if (!_transactions.SendTwoStepAuthentication(ref verify))
                 return new HttpStatusCodeResult(System.Net.HttpStatusCode.ExpectationFailed);
             return new JsonHelper.JsonNetResult(verify, JsonRequestBehavior.AllowGet);            
+        }
+
+        [Themed(Enabled = false)]
+        public ActionResult Verified(string id)
+        {
+            return new EmptyResult();
+        }
+
+        [HttpGet, HttpPost]
+        [Themed(Enabled = false)]
+        public ActionResult VerifyFeedback(string id)
+        {
+            return new EmptyResult();
         }
 
 
@@ -177,6 +194,8 @@ namespace EXPEDIT.Transactions.Controllers
         [Authorize]
         public ActionResult SubmitSoftware()
         {
+            if (!_services.Authorizer.Authorize(Permissions.PartnerSoftware, T("Can't submit software")))
+                return new HttpUnauthorizedResult();
             var m = new SoftwareSubmissionViewModel{ SoftwareSubmissionID = Guid.NewGuid()};
             //Show form
             return View(m);
