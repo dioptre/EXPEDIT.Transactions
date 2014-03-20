@@ -238,6 +238,38 @@ namespace EXPEDIT.Transactions.Controllers
         {
             return new RedirectResult(VirtualPathUtility.ToAbsolute(string.Format("~/share/download/{0}", _transactions.GetOrderInvoice(new Guid(id), Request.GetIPAddress()))));
         }
+        
+        [Themed(Enabled = false)]
+        public ActionResult PurchasesPartial()
+        {
+            return View();
+        }
+
+        [Themed(Enabled = false)]
+        public ActionResult PledgesPartial()
+        {
+            return View();
+        }
+
+        [Themed(Enabled = false)]
+        public ActionResult ProfilePartial()
+        {
+            return View();
+        }
+
+        [Themed(Enabled = false)]
+        public ActionResult MessagesPartial()
+        {
+            return View();
+        }
+
+        [Themed(Enabled = false)]
+        public ActionResult ReferralsPartial()
+        {
+            return View();
+        }
+
+
       
     }
 

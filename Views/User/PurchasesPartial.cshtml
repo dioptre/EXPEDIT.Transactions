@@ -1,0 +1,20 @@
+﻿<h2>Invoices</h2>
+<h2>Licenses</h2>
+<table class="table table-striped" style="width:100%;">
+<thead>
+<tr><th width="75px"></th><th></th></tr>
+</thead>
+<tbody>
+@*    @foreach (var p in Model.Products) {
+        Html.RenderPartial("BuyProductPartial", p);
+    
+    }*@
+    <tr>
+        <td colspan="2"><p>
+            @*@Html.Raw(string.Format("<button class=\"btn btn-info\" onclick=\"window.location.href='" + Url.Action("Confirm",new { area="EXPEDIT.Transactions", controller="User", id=Model.OrderID}) + "'\">Agree</button></p>"))*@
+
+                        </p></td>
+    </tr>        
+
+</tbody>
+</table>

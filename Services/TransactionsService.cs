@@ -1279,6 +1279,24 @@ namespace EXPEDIT.Transactions.Services {
                 return null;
             }
         }
+
+
+        public IEnumerable<Invoice> GetInvoices()
+        {
+            try
+            {
+                var contact = _users.ContactID;
+                using (new TransactionScope(TransactionScopeOption.Suppress))
+                {
+                    var d = new NKDC(_users.ApplicationConnectionString, null, false);
+                    return (from o in d.Invoices where o.CustomerContactID == contact && o.Version == 0 && o.VersionDeletedBy == null select o).AsEnumerable();
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
        
     }
 }

@@ -11,7 +11,17 @@ namespace EXPEDIT.Transactions.ViewModels
         [HiddenInput, Required, DisplayName("Store ID:")]
         public Guid? ApplicationID { get; set; }
 
-        public IEnumerable<ProductViewModel> Products { get; set; }
-
+        //LicensedSessions (Active & Historic)
+        //Machines
+        //Bids (Old, Current, Won)
+        //-Pledges
+        //-Delivery Commitment
+        //public IEnumerable<LicenseViewModel> Licenses { get; set; }
+        //Tickets
+        //Reviews
+        //Referrals
+        //software uploaded
+        //PartnershipStatus
+        //Affiliate Referrals #, points        
     }
 }
