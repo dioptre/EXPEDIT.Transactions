@@ -2,7 +2,7 @@
 <script type="text/javascript">$('#affiliateLinkedIn').css('display', 'none');</script>
 <h2>Download Details:</h2>
 <ul>
-    <li><a href="/share/getorderinvoice/@Model.OrderID">Download Invoice</a></li>
+    <li><a href="/store/user/getorderinvoice/@Model.OrderID">Download Invoice</a></li>
     @foreach (var m in Model.Downloads) {
         <li><a href="/share/download/@m.DownloadID">Download @m.Description</a></li>
     }

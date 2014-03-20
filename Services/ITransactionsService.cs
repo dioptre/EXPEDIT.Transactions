@@ -12,8 +12,15 @@ namespace EXPEDIT.Transactions.Services
      [ServiceContract]
     public interface ITransactionsService : IDependency 
     {
+
+        [OperationContract]
+        Guid? GetInvoice(Guid invoiceID, string requestIPAddress);
+
+        [OperationContract]
+        Guid? GetOrderInvoice(Guid orderID, string requestIPAddress);
+
          [OperationContract]
-         PartnerViewModel GetPartnership(Guid? contractID = default(Guid?));
+         PartnerViewModel GetPartnership(ref PartnerViewModel partnership);
 
          [OperationContract]
          bool UpdatePartnership(PartnerViewModel m, string IPAddress);

@@ -10,13 +10,23 @@
 {
 @Html.AntiForgeryToken()
 <fieldset>
-    <legend>Mining AppStore Partnership Agreement</legend>
+    <legend>Mining Appstore Partnership Agreement</legend>
     <div class="editor-field">
         @Html.Raw(Model.ContractText)
         <br /><br />
     </div>
     <div class="editor-label">
         <strong>Authorised by:</strong>
+    </div>
+    <div class="editor-label">
+        Company:
+    </div>
+    <div class="editor-field">
+        @if (string.IsNullOrWhiteSpace(Model.Company)) {
+            @Html.TextBoxFor(m => m.Company)
+        } else {
+            @Html.TextBoxFor(m => m.Company, new { @readonly = true })
+        }
     </div>
     <div class="editor-label">
         Firstname:
@@ -38,21 +48,27 @@
             @Html.TextBoxFor(m => m.Lastname, new { @readonly = true })
         }
     </div>
-    <div class="editor-label">
-        @Html.LabelFor(m => m.Mobile)
-    </div>
-    <div class="editor-field">
-        @Html.TextBoxFor(m => m.Mobile, new { Style = "float: left;display: inline;", placeholder="Ex. +61 4 00000000" })&nbsp;@Html.Partial("Verify", Model)
-    </div>
-    <div id="verificationCodeDiv" class="editor-label" style="clear:left;float: inherit;display: none;">
-        @Html.LabelFor(m => m.VerificationCode)
-    </div>
-    <div class="editor-field">
-        @Html.TextBoxFor(m => m.VerificationCode, new { Style = "float: inherit;display: none;" })
-    </div>
-    @Html.HiddenFor(m => m.TwoStepID)
-    @Html.HiddenFor(m => m.ContractID)
-    <input id="btnPartnerAgreementAgreed" type="submit" value="Agree to Terms" style="display:none;" disabled/>
+    @if (Model.IsContractValid) {
+        <div class="editor-label">
+            @Html.LabelFor(m => m.Mobile)
+        </div>
+        <div class="editor-field">
+            @Html.TextBoxFor(m => m.Mobile, new { Style = "float: left;display: inline;", placeholder = "Ex. +61 4 00000000" })&nbsp;@Html.Partial("Verify", Model)
+        </div>
+        <div id="verificationCodeDiv" class="editor-label" style="clear:left;float: inherit;display: none;">
+            @Html.LabelFor(m => m.VerificationCode)
+        </div>
+        <div class="editor-field">
+            @Html.TextBoxFor(m => m.VerificationCode, new { Style = "float: inherit;display: none;" })
+        </div>
+        @Html.HiddenFor(m => m.TwoStepID)
+        <input id="btnPartnerAgreementAgreed" type="submit" value="Agree to Terms" style="display:none;" disabled/>
+    }
+    else
+    {
+        <input id="btnPartnerAgreementUpdate" type="submit" value="Update My Details"/>
+    }
+    @Html.HiddenFor(m => m.ContractID)    
 </fieldset>
 }
 <script type="text/javascript">
@@ -66,6 +82,9 @@
                 error.insertBefore(element);
             },
             rules: {
+                "Company": {
+                    required: true,
+                },
                 "Mobile" : {
                         required: true,
                 },

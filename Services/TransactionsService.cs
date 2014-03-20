@@ -23,6 +23,7 @@ using NKD.Module.BusinessObjects;
 using EXPEDIT.Transactions.ViewModels;
 using NKD.Services;
 using Orchard.Media.Services;
+using EXPEDIT.Transactions.Helpers;
 using EXPEDIT.Transactions.Services.Payments;
 using EntityFramework.Extensions;
 using Newtonsoft.Json;
@@ -935,16 +936,19 @@ namespace EXPEDIT.Transactions.Services {
         }
 
 
-        public PartnerViewModel GetPartnership(Guid? contractID = default(Guid?))
+        public PartnerViewModel GetPartnership(ref PartnerViewModel m)
         {
-
+            var now = DateTime.UtcNow;       
+            if (m == null)
+                m = new PartnerViewModel { };
+            var cid = m.ContractID;
             var contact = _users.GetContact(_users.Username);
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {                
                 var d = new NKDC(_users.ApplicationConnectionString, null);
                 Contract contract = null;
-                if (contractID.HasValue)
-                    contract = (from o in d.Contracts where o.ContractID == contractID.Value && o.VersionDeletedBy == null && o.Version == 0 select o).FirstOrDefault();
+                if (m.ContractID.HasValue)
+                    contract = (from o in d.Contracts where o.ContractID == cid.Value && o.VersionDeletedBy == null && o.Version == 0 select o).FirstOrDefault();
                 if (contract == null)
                     contract = (from o in d.Contracts where o.Started == null && o.ObligeeID==contact.ContactID && o.ParentContractID == ConstantsHelper.CONTRACT_PARTNER && o.VersionDeletedBy == null && o.Version == 0 orderby o.VersionUpdated descending select o).FirstOrDefault();
                 if (contract == null)
@@ -962,35 +966,42 @@ namespace EXPEDIT.Transactions.Services {
                     contract.ObligorCompanyID = ConstantsHelper.COMPANY_DEFAULT;
                 if (contract.AssigneeID != contact.ContactID)
                     contract.AssigneeID = contact.ContactID;
-                var twoStep = (from o in d.TwoStepAuthenticationDatas where o.TableType == ConstantsHelper.REFERENCE_TYPE_CONTRACT && o.ReferenceID == contract.ContractID && o.ContactID==contact.ContactID && o.VersionDeletedBy == null && o.Version == 0 orderby o.Sequence descending select o).FirstOrDefault();
-                if (twoStep == null)
+                if (m.IsContractValid)
                 {
-                    twoStep = new TwoStepAuthenticationData();
-                    twoStep.TwoStepAuthenticationDataID = Guid.NewGuid();
-                    twoStep.TableType = ConstantsHelper.REFERENCE_TYPE_CONTRACT;
-                    twoStep.ReferenceID = contract.ContractID;
-                    twoStep.ContactID = contact.ContactID;
-                    twoStep.Mobile = contact.DefaultMobile;
-                    twoStep.ReferenceName = contact.DefaultMobile;
-                    twoStep.VerificationCode = Guid.NewGuid().ToString().Substring(0, 4);
-                    d.TwoStepAuthenticationDatas.AddObject(twoStep);
+                    var twoStep = (from o in d.TwoStepAuthenticationDatas where o.TableType == ConstantsHelper.REFERENCE_TYPE_CONTRACT && o.ReferenceID == contract.ContractID && o.ContactID == contact.ContactID && o.VersionDeletedBy == null && o.Version == 0 orderby o.Sequence descending select o).FirstOrDefault();
+                    if (twoStep == null)
+                    {
+                        twoStep = new TwoStepAuthenticationData();
+                        twoStep.TwoStepAuthenticationDataID = Guid.NewGuid();
+                        twoStep.TableType = ConstantsHelper.REFERENCE_TYPE_CONTRACT;
+                        twoStep.ReferenceID = contract.ContractID;
+                        twoStep.ContactID = contact.ContactID;
+                        twoStep.Mobile = contact.DefaultMobile;
+                        twoStep.ReferenceName = contact.DefaultMobile;
+                        twoStep.VerificationCode = Guid.NewGuid().ToString().Substring(0, 4);
+                        d.TwoStepAuthenticationDatas.AddObject(twoStep);
+                    }
+                    contract.ContractText = contract.ParentContract.ContractText.Replace("{Firstname}", contact.Firstname.Replace("{", "{{").Replace("}", "}}")).Replace("{Surname}", m.Lastname.Replace("{", "{{").Replace("}", "}}")).Replace("{Company}", m.Company.Replace("{", "{{").Replace("}", "}}")).Replace("{Date}", now.ToLongDateString() + " " + now.ToLongTimeString() + " UTC");
+                    m.TwoStepID = twoStep.TwoStepAuthenticationDataID;
                 }
+                m.ContactID = contact.ContactID;                
+                m.Lastname = contact.Surname;
+                m.Firstname = contact.Firstname;
+                m.ContractID = contract.ContractID;
+                m.Mobile = contact.DefaultMobile;
+                contract.Comment = JsonConvert.SerializeObject(m);        
                 d.SaveChanges();
-                var m = new PartnerViewModel { 
-                    ContactID = contact.ContactID,  
-                    TwoStepID = twoStep.TwoStepAuthenticationDataID,
-                    Lastname = contact.Surname,
-                    Firstname = contact.Firstname,
-                    ContractID = contract.ContractID,
-                    ContractText = contract.ContractText,
-                    Mobile = contact.DefaultMobile,                     
-                };
+                m.ContractText = contract.ContractText;
                 return m;
             }
         }
 
         public bool UpdatePartnership(PartnerViewModel m, string IPAddress)
         {
+            if (m == null)
+                return false;
+            if (m.VerificationID == default(Guid))
+                return false;
             var contact = _users.GetContact(_users.Username);
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
@@ -1037,6 +1048,8 @@ namespace EXPEDIT.Transactions.Services {
             verify.Mobile = verify.Mobile.Replace(" ","").Replace("-","");
             if (!verify.Mobile.IsMobile())
                 return false;
+            if (verify.VerificationID == default(Guid))
+                return false;
                     
              using (new TransactionScope(TransactionScopeOption.Suppress))
              {
@@ -1079,43 +1092,7 @@ namespace EXPEDIT.Transactions.Services {
 
         public bool ReceiveTwoStepAuthentication(string id)
         {
-
-            using (new TransactionScope(TransactionScopeOption.Suppress))
-            {
-                //var twoStepID = verify.VerificationID;
-                //var d = new NKDC(_users.ApplicationConnectionString, null);
-                //var twoStep = (from o in d.TwoStepAuthenticationDatas where o.TwoStepAuthenticationDataID == twoStepID && o.VersionDeletedBy == null && o.Version == 0 select o).Single();
-                //var client = new RestClient("https://api.smsglobal.com");
-                ////System.Net.ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
-                //// client.Authenticator = new HttpBasicAuthenticator(username, password);
-                //var request = new RestRequest("/v1/sms/", Method.POST);
-                //var id = "80d249a9eecc9232fb6ed0f843e7f230";
-                //var secret = "6239e342d7abb35c853ad33e65931f64";
-                //var timestamp = string.Format("{0:0}", DateHelper.Timestamp);
-                //var nonce = Guid.NewGuid().ToString().Replace("-", "").Substring(0, 32);
-                //string hash = null;
-                //var raw = System.Text.Encoding.ASCII.GetBytes(string.Format("{0}\n{1}\n{2}\n{3}\n{4}\n{5}\n\n", timestamp, nonce, "POST", "/v1/sms/", "api.smsglobal.com", "443", null));
-                //using (HMACSHA256 hmac = new HMACSHA256(System.Text.Encoding.ASCII.GetBytes(secret)))
-                //    hash = Convert.ToBase64String(hmac.ComputeHash(raw, 0, raw.Length));
-                //var mac = string.Format("MAC id=\"{0}\", ts=\"{1}\", nonce=\"{2}\", mac=\"{3}\"", id, timestamp, nonce, hash);
-                ////client.Authenticator = new OAuth2AuthorizationRequestHeaderAuthenticator();
-                ////client.PreAuthenticate = true;
-                //request.AddHeader("Authorization", mac);
-                //request.AddParameter("origin", "61400970789");
-                //var destination = verify.Mobile.Replace("+", "");
-                //request.AddParameter("destination", destination); // destination);
-                //request.AddParameter("message", string.Format("Your MiningAppStore code is {0}", twoStep.VerificationCode));
-                ////IRestResponse<Person> response2 = client.Execute<Person>(request);
-                //IRestResponse response = client.Execute(request);
-                //if (response.StatusCode != System.Net.HttpStatusCode.Created)
-                //    return false;
-                //twoStep.Sent = DateTime.UtcNow;
-                //twoStep.Mobile = destination;
-                //twoStep.Contact.DefaultMobile = verify.Mobile;
-                //d.SaveChanges();
-                return true;
-            }
-
+              return true;
         }
 
         public bool SubmitSoftware(SoftwareSubmissionViewModel m)
@@ -1200,9 +1177,107 @@ namespace EXPEDIT.Transactions.Services {
             }
 
             return true;
+        }
 
+        public Guid? GetOrderInvoice(Guid orderID, string requestIPAddress)
+        {
+            try
+            {
+                var contact = _users.ContactID;
+                var invoiceID = default(Guid?);
+                using (new TransactionScope(TransactionScopeOption.Suppress))
+                {
+                    var d = new NKDC(_users.ApplicationConnectionString, null, false);
+                    invoiceID = (from o in d.Supplies
+                                 join i in d.Invoices on o.SupplyID equals i.SupplyID
+                                 where o.CustomerPurchaseOrderID == orderID && o.PurchaseOrderCustomer.CustomerContactID == contact
+                                 && o.Version == 0 && o.VersionDeletedBy == null
+                                 && i.Version == 0 && i.VersionDeletedBy == null
+                                 orderby i.VersionUpdated descending
+                                 select i.InvoiceID).FirstOrDefault();
+                }
+                if (invoiceID.HasValue)
+                    return GetInvoice(invoiceID.Value, requestIPAddress);
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
-
+        public Guid? GetInvoice(Guid invoiceID, string requestIPAddress)
+        {
+            try
+            {
+                var application = _users.ApplicationID;
+                var contact = _users.ContactID;
+                var company = _users.ApplicationCompanyID;
+                var server = _users.ServerID;
+                var now = DateTime.UtcNow;
+                using (new TransactionScope(TransactionScopeOption.Suppress))
+                {
+                    var d = new NKDC(_users.ApplicationConnectionString, null, false);
+                    var invoiceTableType = d.GetTableName(typeof(Invoice), true);
+                    var invoice = (from o in d.Invoices
+                                   where o.InvoiceID == invoiceID
+                                   && o.Version == 0 && o.VersionDeletedBy == null
+                                   select o).Single();
+                    if (contact != invoice.CustomerContactID) //TODO: check other contact owner/company etc
+                        throw new OrchardSecurityException(T(string.Format("Not authorized to view invoice contact: {0} invoice: {1}", contact, invoiceID)));
+                    var download = (from o in d.Downloads
+                                    join f in d.FileDatas on o.FileDataID equals f.FileDataID
+                                    where f.ReferenceID == invoiceID && f.TableType == invoiceTableType
+                                    && f.VersionDeletedBy == null && f.Version == 0 && o.VersionDeletedBy == null && o.Version == 0
+                                    select o).FirstOrDefault();
+                    if (download != null)
+                        return download.DownloadID;
+                    Stream stream = new MemoryStream();
+                    invoice.GetPDF(ref stream, _storage.GetAbsolutePath(ConstantsHelper.PDF_LOGO));
+                    stream.Seek(0, SeekOrigin.Begin);
+                    var bytes = stream.ToByteArray();
+                    var file = new FileData
+                    {
+                        FileDataID = Guid.NewGuid()
+                        ,
+                        TableType = invoiceTableType
+                        ,
+                        ReferenceID = invoiceID
+                        ,
+                        FileBytes = bytes
+                        ,
+                        FileTypeID = ConstantsHelper.FILE_TYPE_INVOICE
+                        ,
+                        FileName = string.Format("Invoice-[{0}].pdf", invoiceID)
+                        ,
+                        FileChecksum = bytes.ComputeHash()
+                        ,
+                        VersionOwnerContactID = contact
+                        ,
+                        VersionOwnerCompanyID = company
+                        ,
+                        DocumentType = ConstantsHelper.DOCUMENT_TYPE_INVOICE
+                    };
+                    stream.Close();
+                    download = new Download
+                    {
+                        DownloadID = Guid.NewGuid(),
+                        FileAllocated = now,
+                        FilterContactID = contact,
+                        RemainingDownloads = ConstantsHelper.DOWNLOADS_REMAINING_DEFAULT,
+                        FileDataID = file.FileDataID,
+                        ValidFrom = now,
+                    };
+                    download.FileData = file;
+                    d.Downloads.AddObject(download);
+                    d.SaveChanges();
+                    return download.DownloadID;
+                }
+            }
+            catch
+            {
+                return null;
+            }
         }
        
     }

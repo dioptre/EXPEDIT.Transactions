@@ -25,6 +25,7 @@ namespace EXPEDIT.Transactions.Controllers
         private IOrchardServices _services { get; set; }
         private ITransactionsService _transactions { get; set; }
         private IContentService _content { get; set; }
+        
 
         public UserController(IOrchardServices services, ITransactionsService transactions, IContentService content)
         {
@@ -126,7 +127,8 @@ namespace EXPEDIT.Transactions.Controllers
         public ActionResult PartnerAgreement()
         {
             //Show agreement            
-            return View(_transactions.GetPartnership());
+            PartnerViewModel p = new PartnerViewModel { };
+            return View(_transactions.GetPartnership(ref p));
         }
         
         
@@ -135,12 +137,9 @@ namespace EXPEDIT.Transactions.Controllers
         public ActionResult PartnerAgreement(PartnerViewModel m)
         {
             //Save agreement
-            if (_transactions.UpdatePartnership(m, Request.GetIPAddress()))
+            if (m.TwoStepID.HasValue && _transactions.UpdatePartnership(m, Request.GetIPAddress()))
                 return new RedirectResult(System.Web.VirtualPathUtility.ToAbsolute("~/PartnerAgreementConfirmed"));
-            var p = _transactions.GetPartnership();
-            p.Firstname = m.Firstname;
-            p.Lastname = m.Lastname;
-            p.Mobile = m.Mobile;
+            var p = _transactions.GetPartnership(ref m);
             return View(p);
         }
 
@@ -220,6 +219,25 @@ namespace EXPEDIT.Transactions.Controllers
             return View();
         }
 
+
+        [ValidateInput(false)]
+        [Authorize]
+        //[ValidateAntiForgeryToken]
+        [Themed(true)]
+        public ActionResult GetInvoice(string id)
+        {
+            
+            return new RedirectResult(VirtualPathUtility.ToAbsolute(string.Format("~/share/download/{0}", _transactions.GetInvoice(new Guid(id), Request.GetIPAddress())))); 
+        }
+
+        [ValidateInput(false)]
+        [Authorize]
+        //[ValidateAntiForgeryToken]
+        [Themed(true)]
+        public ActionResult GetOrderInvoice(string id)
+        {
+            return new RedirectResult(VirtualPathUtility.ToAbsolute(string.Format("~/share/download/{0}", _transactions.GetOrderInvoice(new Guid(id), Request.GetIPAddress()))));
+        }
       
     }
 
