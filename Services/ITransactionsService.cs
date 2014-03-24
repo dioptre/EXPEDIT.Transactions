@@ -87,5 +87,9 @@ namespace EXPEDIT.Transactions.Services
         [OperationContract]
         IEnumerable<LicenseViewModel> GetLicenses(int? startRowIndex = null, int? pageSize = null);
 
+        [OperationContract]
+        ContactViewModel GetContact(Guid? contactID = null);
+        
+
     }
 }

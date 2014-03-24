@@ -1430,6 +1430,74 @@ namespace EXPEDIT.Transactions.Services {
                 return m;
             }
         }
+
+        public ContactViewModel GetContact(Guid? contact = null)
+        {
+            if (!contact.HasValue)
+                contact = _users.ContactID;
+            var application = _users.ApplicationID;
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new NKDC(_users.ApplicationConnectionString, null);
+                var r = (from o in d.Contacts
+                         where o.ContactID == contact.Value && o.Version == 0 && o.VersionDeletedBy == null
+                         select o).Single();
+                var c = new ContactViewModel
+                             {
+                                 ContactID = r.ContactID,
+                                 ContactName = r.ContactName,
+                                 Title = r.Title,
+                                 Surname = r.Surname,
+                                 Firstname = r.Firstname,
+                                 Username = r.Username,
+                                 Hash = r.Hash,
+                                 DefaultEmail = r.DefaultEmail,
+                                 DefaultEmailValidated = r.DefaultEmailValidated,
+                                 DefaultMobile = r.DefaultMobile,
+                                 DefaultMobileValidated = r.DefaultMobileValidated,
+                                 MiddleNames = r.MiddleNames,
+                                 Initials = r.Initials,
+                                 DOB = r.DOB,
+                                 BirthCountryID = r.BirthCountryID,
+                                 BirthCity = r.BirthCity,
+                                 AspNetUserID = r.AspNetUserID,
+                                 XafUserID = r.XafUserID,
+                                 OAuthID = r.OAuthID,
+                                 Photo = r.Photo,
+                                 ShortBiography = r.ShortBiography,
+                                 ContactAddresses = new List<ContactAddressViewModel>()
+                             };
+
+                var a = ((List<ContactAddressViewModel>)c.ContactAddresses);
+                foreach (var ca in (from o in d.ContactAddresses where o.ContactID == contact && o.Version == 0 && o.VersionDeletedBy == null && o.Address.Version == 0 && o.Address.VersionDeletedBy == null select o.Address))
+                {
+                    a.Add(new ContactAddressViewModel
+                    {
+                        AddressID = ca.AddressID,
+                        AddressTypeID = ca.AddressTypeID,
+                        AddressName = ca.AddressName,
+                        Sequence = ca.Sequence,
+                        Street = ca.Street,
+                        Extended = ca.Extended,
+                        City = ca.City,
+                        State = ca.State,
+                        Country = ca.Country,
+                        Postcode = ca.Postcode,
+                        IsHQ = ca.IsHQ,
+                        IsPostBox = ca.IsPostBox,
+                        IsBusiness = ca.IsBusiness,
+                        IsHome = ca.IsHome,
+                        Phone = ca.Phone,
+                        Fax = ca.Fax,
+                        Email = ca.Email,
+                        Mobile = ca.Mobile,
+                        LocationID = ca.LocationID
+                    });
+                    
+                }
+                return c;
+            }
+        }
        
     }
 }

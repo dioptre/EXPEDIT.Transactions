@@ -263,6 +263,7 @@ namespace EXPEDIT.Transactions.Controllers
         {
             if (m == null)
                 m = new AccountViewModel();
+            m.Contact = _transactions.GetContact();
             return View(m);
         }
 

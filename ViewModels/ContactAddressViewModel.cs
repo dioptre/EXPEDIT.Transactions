@@ -10,8 +10,8 @@ namespace EXPEDIT.Transactions.ViewModels
     {
         [HiddenInput, Required, DisplayName("Contact ID:")]
         public Guid? ContactID { get; set; }
-        [HiddenInput, Required, DisplayName("Contact Address ID:")]
-        public Guid? ContactAddressID { get; set; }
+        //public Guid? ContactAddressID { get; set; }
+        public Guid? AddressID { get; set; }
         public Guid? AddressTypeID { get; set; }
         public string AddressName { get; set; }
         public int Sequence { get; set; }

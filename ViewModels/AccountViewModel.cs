@@ -20,6 +20,8 @@ namespace EXPEDIT.Transactions.ViewModels
         public int? Offset { get; set; }
         public int? PageSize { get; set; }
 
+        public ContactViewModel Contact { get; set; }
+
         //LicensedSessions (Active & Historic)
         //Machines
         //Bids (Old, Current, Won)
