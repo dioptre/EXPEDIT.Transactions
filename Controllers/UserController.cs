@@ -245,12 +245,6 @@ namespace EXPEDIT.Transactions.Controllers
         {
             if (m == null)
                 m = new AccountViewModel();
-            if (!m.PageSize.HasValue || m.PageSize > 20)
-                m.PageSize = 20;
-            if (!m.Offset.HasValue || m.Offset < 1)
-                m.Offset = 1;
-            if (m.Invoices == null)
-                m.Invoices = _transactions.GetInvoices(m.Offset, m.PageSize);
             return View(m);
         }
 
@@ -320,14 +314,30 @@ namespace EXPEDIT.Transactions.Controllers
         [Authorize]
         public ActionResult MyInvoicesPartialPager(AccountViewModel m)
         {
+            return View(m);
+        }
+
+
+        [Themed(Enabled = false)]
+        [Authorize]
+        public ActionResult MyLicensesPartial(AccountViewModel m)
+        {
             if (m == null)
                 m = new AccountViewModel();
             if (!m.PageSize.HasValue || m.PageSize > 20)
                 m.PageSize = 20;
             if (!m.Offset.HasValue || m.Offset < 1)
                 m.Offset = 1;
-            if (m.Invoices == null)
-                m.Invoices = _transactions.GetInvoices(m.Offset, m.PageSize);
+            if (m.Licenses == null)
+                m.Licenses = _transactions.GetLicenses(m.Offset, m.PageSize);
+            return View(m);
+
+        }
+
+        [Themed(Enabled = false)]
+        [Authorize]
+        public ActionResult MyLicensesPartialPager(AccountViewModel m)
+        {
             return View(m);
         }     
 

@@ -9,7 +9,7 @@ namespace EXPEDIT.Transactions.ViewModels
     public class DownloadViewModel
     {
         
-        public Guid DownloadID { get; set; }
+        public Guid? DownloadID { get; set; }
         public string Description { get; set; }
 
     }

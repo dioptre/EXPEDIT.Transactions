@@ -7,5 +7,5 @@
   <li><a href="#" id="MyInvoicesPartialPagerNext">Next</a></li>
 </ul>
 <script language="javascript" type="text/javascript">
-    addPager(@Model.Offset, @Model.PageSize, '/Transactions/Paged/', 'MyInvoicesPartial');
+    addPager(@(Model.Offset.HasValue ? Model.Offset.Value : 1), @(Model.PageSize.HasValue ? Model.PageSize.Value : 20), '/Transactions/Paged/', 'MyInvoicesPartial');
 </script>

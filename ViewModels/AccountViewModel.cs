@@ -16,6 +16,7 @@ namespace EXPEDIT.Transactions.ViewModels
         public int? AffiliatePoints { get; set; }
 
         public IEnumerable<InvoiceViewModel> Invoices { get; set; }
+        public IEnumerable<LicenseViewModel> Licenses { get; set; }
         public int? Offset { get; set; }
         public int? PageSize { get; set; }
 

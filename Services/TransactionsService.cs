@@ -1291,6 +1291,94 @@ namespace EXPEDIT.Transactions.Services {
                 var d = new NKDC(_users.ApplicationConnectionString, null);
                 var m = from o in d.E_SP_GetInvoices(null, application, null, null, null, contact, null, startRowIndex, pageSize)
                         select new InvoiceViewModel { InvoiceID = o.InvoiceID };
+                return m.ToArray();
+            }
+        }
+
+        public IEnumerable<LicenseViewModel> GetLicenses(int? startRowIndex = null, int? pageSize = null)
+        {
+
+            var contact = _users.ContactID;
+            var application = _users.ApplicationID;
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new NKDC(_users.ApplicationConnectionString, null);
+                var r = (from o in d.E_SP_GetLicenses(application, null, null, null, contact, startRowIndex, pageSize)
+                        select o).ToArray();
+                var m = new List<LicenseViewModel>();
+                foreach(var o in r)
+                {
+                    LicenseViewModel l = m.LastOrDefault();
+                    if (l == null || l.LicenseID != o.LicenseID)
+                    {
+                        l = new LicenseViewModel
+                            {
+                                LicenseID = o.LicenseID,
+                                CompanyID = o.CompanyID,
+                                ContactID = o.ContactID,
+                                LicenseeGUID = o.LicenseeGUID,
+                                LicenseeName = o.LicenseeName,
+                                LicenseeUsername = o.LicenseeUsername,
+                                LicenseeUniqueMachineCode1 = o.LicenseeUniqueMachineCode1,
+                                LicenseeUniqueMachineCode2 = o.LicenseeUniqueMachineCode2,
+                                LicenseeGroupID = o.LicenseeGroupID,
+                                LicensorIP = o.LicensorIP,
+                                LicensorName = o.LicensorName,
+                                LicenseTypeID = o.LicenseTypeID,
+                                LicenseType = o.LicenseType,
+                                LicenseURL = o.LicenseURL,
+                                RootServerName = o.RootServerName,
+                                RootServerID = o.RootServerID,
+                                ServerName = o.ServerName,
+                                ServerID = o.ServerID,
+                                ApplicationID = o.ApplicationID,
+                                ServiceAuthenticationMethod = o.ServiceAuthenticationMethod,
+                                ServiceAuthorisationMethod = o.ServiceAuthorisationMethod,
+                                ValidFrom = o.ValidFrom,
+                                Expiry = o.Expiry,
+                                SupportExpiry = o.SupportExpiry,
+                                ValidForDuration = o.ValidForDuration,
+                                ValidForUnitID = o.ValidForUnitID,
+                                ValidForUnitName = o.ValidForUnitName,
+                                LicenseAssets = new List<LicenseAssetViewModel>(),
+                                LicenseDownloads = new List<DownloadViewModel>()
+
+                            };
+                        m.Add(l);                       
+                    }
+                    if (o.DownloadID.HasValue && !l.LicenseDownloads.Any(f => f.DownloadID == o.DownloadID))
+                        ((List<DownloadViewModel>)l.LicenseDownloads).Add(new DownloadViewModel { DownloadID = o.DownloadID, Description = o.Description });
+                    LicenseAssetViewModel la = l.LicenseAssets.FirstOrDefault(f => f.LicenseAssetID == o.LicenseAssetID);
+                    if (o.LicenseAssetID.HasValue && la == null)
+                    {
+                        la = new LicenseAssetViewModel {
+                            LicenseAssetID = o.LicenseAssetID,
+                            LicenseID = o.LicenseID,
+                            AssetID = o.AssetID,
+                            ProRataCost = o.ProRataCost,
+                            ModelID = o.ModelID,
+                            ModelName = o.StandardModelName,
+                            Restrictions = o.ModelRestrictions,
+                            LicenseAssetModelParts = new List<LicenseAssetModelPartViewModel>()
+                        };
+                        ((List<LicenseAssetViewModel>)l.LicenseAssets).Add(la);
+                    }
+                    if (o.LicenseAssetModelPartID.HasValue && la != null && !la.LicenseAssetModelParts.Any(f=>f.LicenseAssetModelPartID == o.LicenseAssetModelPartID))
+                    {
+                        ((List<LicenseAssetModelPartViewModel>)la.LicenseAssetModelParts).Add(
+                            new LicenseAssetModelPartViewModel {
+                                LicenseAssetModelPartID = o.LicenseAssetModelPartID,
+                                LicenseID = o.LicenseID,
+                                LicenseAssetID = o.LicenseAssetID,
+                                ModelID = o.ModelID,
+                                ModelPartID = o.ModelPartID,
+                                PartName = o.StandardPartName,
+                                Restrictions = o.PartRestrictions
+                            }
+                            );
+                    }
+                   
+                }
                 return m;
             }
         }

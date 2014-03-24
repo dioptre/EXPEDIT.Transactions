@@ -1,0 +1,11 @@
+﻿@model EXPEDIT.Transactions.ViewModels.AccountViewModel
+<div id="MyLicensesPartialPagerPage">
+    Loading...
+</div>
+<ul class="pager">
+  <li><a href="#" id="MyLicensesPartialPagerPrevious">Previous</a></li>
+  <li><a href="#" id="MyLicensesPartialPagerNext">Next</a></li>
+</ul>
+<script language="javascript" type="text/javascript">
+    addPager(@(Model.Offset.HasValue ? Model.Offset.Value : 1), @(Model.PageSize.HasValue ? Model.PageSize.Value : 20), '/Transactions/Paged/', 'MyLicensesPartial');
+</script>

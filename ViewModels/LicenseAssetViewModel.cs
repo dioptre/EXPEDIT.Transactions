@@ -12,12 +12,13 @@ namespace EXPEDIT.Transactions.ViewModels
         public Guid? LicenseAssetID { get; set; }        
         public Guid? LicenseID { get; set; }
         public Guid? AssetID { get; set; }
-        public Guid? ProRataCost { get; set; }
+        public decimal? ProRataCost { get; set; }
         public Guid? ModelID { get; set; }
-        public Guid? Restrictions { get; set; }
+        public string ModelName { get; set; }
+        public string Restrictions { get; set; }
 
 
-        public IEnumerable<LicenseAssetModelPartViewModel> LicenseAssets { get; set; }
+        public IEnumerable<LicenseAssetModelPartViewModel> LicenseAssetModelParts { get; set; }
         //Could connect with Asset one day
 
     }

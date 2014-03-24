@@ -30,9 +30,9 @@ namespace EXPEDIT.Transactions.ViewModels
         public Guid? ApplicationID { get; set; }
         public string ServiceAuthenticationMethod { get; set; }
         public string ServiceAuthorisationMethod { get; set; }
-        public DateTime ValidFrom { get; set; }
-        public DateTime Expiry { get; set; }
-        public DateTime SupportExpiry { get; set; }
+        public DateTime? ValidFrom { get; set; }
+        public DateTime? Expiry { get; set; }
+        public DateTime? SupportExpiry { get; set; }
         public decimal? ValidForDuration { get; set; }
         public Guid? ValidForUnitID { get; set; }
         public string ValidForUnitName { get; set; }

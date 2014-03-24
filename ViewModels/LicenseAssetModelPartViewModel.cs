@@ -11,10 +11,11 @@ namespace EXPEDIT.Transactions.ViewModels
         [HiddenInput, Required, DisplayName("License Asset Model Part ID:")]
         public Guid? LicenseAssetModelPartID { get; set; }        
         public Guid? LicenseID { get; set; }
-        public Guid? AssetID { get; set; }
+        public Guid? LicenseAssetID { get; set; }
         public Guid? ModelID { get; set; }
         public Guid? ModelPartID { get; set; }
-        public Guid? Restrictions { get; set; }
+        public string PartName { get; set; }
+        public string Restrictions { get; set; }
 
     }
  

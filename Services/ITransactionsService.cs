@@ -84,5 +84,8 @@ namespace EXPEDIT.Transactions.Services
          [OperationContract]
          IEnumerable<InvoiceViewModel> GetInvoices(int? startRowIndex = null, int? pageSize = null);
 
+         [OperationContract]
+         IEnumerable<LicenseViewModel> GetLicenses(int? startRowIndex = null, int? pageSize = null);
+
     }
 }

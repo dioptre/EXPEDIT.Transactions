@@ -251,6 +251,8 @@
     <Content Include="Views\User\LicensesPartial.cshtml" />
     <Content Include="Views\User\MyInvoicesPartial.cshtml" />
     <Content Include="Views\User\MyInvoicesPartialPager.cshtml" />
+    <Content Include="Views\User\MyLicensesPartialPager.cshtml" />
+    <Content Include="Views\User\MyLicensesPartial.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\..\..\..\crednexus\src\main\CNX.Shared\CNX.Shared.csproj">
