@@ -1,7 +1,12 @@
-﻿<h2>Product Reviews</h2>
+﻿@model EXPEDIT.Transactions.ViewModels.AccountViewModel
+<h2>Product Reviews</h2>
 <h3>My Product Reviews</h3>
+<p>None.</p>
 <h3>Product Reviews of My Products</h3>
+<p>None.</p>
 <h2>Affiliate Program</h2>
-<h3>Points</h3>
 <h3>Number of Referrals</h3>
+<h4 style="color:black;">@(Model.AffiliateCount.HasValue ? Model.AffiliateCount.Value : 0)</h4>
+<h3>Points</h3>
+<h4 style="color:black;">@(Model.AffiliatePoints.HasValue ? Model.AffiliatePoints.Value * 100 : 0)</h4>
 

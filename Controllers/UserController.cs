@@ -238,37 +238,98 @@ namespace EXPEDIT.Transactions.Controllers
         {
             return new RedirectResult(VirtualPathUtility.ToAbsolute(string.Format("~/share/download/{0}", _transactions.GetOrderInvoice(new Guid(id), Request.GetIPAddress()))));
         }
-        
+
+        [Authorize]
         [Themed(Enabled = false)]
-        public ActionResult PurchasesPartial()
+        public ActionResult PurchasesPartial(AccountViewModel m)
         {
-            return View();
+            if (m == null)
+                m = new AccountViewModel();
+            if (!m.PageSize.HasValue || m.PageSize > 20)
+                m.PageSize = 20;
+            if (!m.Offset.HasValue || m.Offset < 1)
+                m.Offset = 1;
+            if (m.Invoices == null)
+                m.Invoices = _transactions.GetInvoices(m.Offset, m.PageSize);
+            return View(m);
+        }
+
+        [Authorize]
+        [Themed(Enabled = false)]
+        public ActionResult PledgesPartial(AccountViewModel m)
+        {
+            if (m == null)
+                m = new AccountViewModel();
+            return View(m);
+        }
+
+        [Authorize]
+        [Themed(Enabled = false)]
+        public ActionResult ProfilePartial(AccountViewModel m)
+        {
+            if (m == null)
+                m = new AccountViewModel();
+            return View(m);
+        }
+
+        [Authorize]
+        [Themed(Enabled = false)]
+        public ActionResult MessagesPartial(AccountViewModel m)
+        {
+            if (m == null)
+                m = new AccountViewModel();
+            return View(m);
+        }
+
+        [Authorize]
+        [Themed(Enabled = false)]
+        public ActionResult ReferralsPartial(AccountViewModel m)
+        {
+            if (m == null)
+                m = new AccountViewModel { AffiliateCount = _content.GetAffiliateCount(), AffiliatePoints = _content.GetAffiliatePoints() };
+            return View(m);
+        }
+
+        [Authorize]
+        [Themed(Enabled = false)]
+        public ActionResult LicensesPartial(AccountViewModel m)
+        {
+            if (m == null)
+                m = new AccountViewModel();
+            return View(m);
+        }
+
+
+        [Themed(Enabled = false)]
+        [Authorize]
+        public ActionResult MyInvoicesPartial(AccountViewModel m)
+        {
+            if (m == null)
+                m = new AccountViewModel();
+            if (!m.PageSize.HasValue || m.PageSize > 20)
+                m.PageSize = 20;
+            if (!m.Offset.HasValue || m.Offset < 1)
+                m.Offset = 1;
+            if (m.Invoices == null)
+                m.Invoices = _transactions.GetInvoices( m.Offset, m.PageSize);
+            return View(m);
+
         }
 
         [Themed(Enabled = false)]
-        public ActionResult PledgesPartial()
+        [Authorize]
+        public ActionResult MyInvoicesPartialPager(AccountViewModel m)
         {
-            return View();
-        }
-
-        [Themed(Enabled = false)]
-        public ActionResult ProfilePartial()
-        {
-            return View();
-        }
-
-        [Themed(Enabled = false)]
-        public ActionResult MessagesPartial()
-        {
-            return View();
-        }
-
-        [Themed(Enabled = false)]
-        public ActionResult ReferralsPartial()
-        {
-            return View();
-        }
-
+            if (m == null)
+                m = new AccountViewModel();
+            if (!m.PageSize.HasValue || m.PageSize > 20)
+                m.PageSize = 20;
+            if (!m.Offset.HasValue || m.Offset < 1)
+                m.Offset = 1;
+            if (m.Invoices == null)
+                m.Invoices = _transactions.GetInvoices(m.Offset, m.PageSize);
+            return View(m);
+        }     
 
       
     }

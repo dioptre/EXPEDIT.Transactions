@@ -11,6 +11,14 @@ namespace EXPEDIT.Transactions.ViewModels
         [HiddenInput, Required, DisplayName("Store ID:")]
         public Guid? ApplicationID { get; set; }
 
+        public int? AffiliateCount { get; set; }
+
+        public int? AffiliatePoints { get; set; }
+
+        public IEnumerable<InvoiceViewModel> Invoices { get; set; }
+        public int? Offset { get; set; }
+        public int? PageSize { get; set; }
+
         //LicensedSessions (Active & Historic)
         //Machines
         //Bids (Old, Current, Won)

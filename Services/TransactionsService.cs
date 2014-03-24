@@ -500,7 +500,7 @@ namespace EXPEDIT.Transactions.Services {
                                     AssetID = assetID,
                                     AssetName = string.Format("{0} [{1}]", string.Join(null, mn.Take(60 - 42)), assetID),
                                     InitialCost = lineItem.Subtotal,
-                                    ProRataCost = supplyItem.CostPerUnitModel,
+                                    ProRataCost = supplyItem.CostPerUnitModel + supplyItem.TaxModel,
                                     ProRataUnitID = supplyItem.ModelUnitID,
                                     Purchased = now,
                                     PurchaseOrderID = order.OrderID,
@@ -1281,20 +1281,17 @@ namespace EXPEDIT.Transactions.Services {
         }
 
 
-        public IEnumerable<Invoice> GetInvoices()
+        public IEnumerable<InvoiceViewModel> GetInvoices(int? startRowIndex = null, int? pageSize = null)
         {
-            try
+
+            var contact = _users.ContactID;
+            var application = _users.ApplicationID;
+            using (new TransactionScope(TransactionScopeOption.Suppress))
             {
-                var contact = _users.ContactID;
-                using (new TransactionScope(TransactionScopeOption.Suppress))
-                {
-                    var d = new NKDC(_users.ApplicationConnectionString, null, false);
-                    return (from o in d.Invoices where o.CustomerContactID == contact && o.Version == 0 && o.VersionDeletedBy == null select o).AsEnumerable();
-                }
-            }
-            catch
-            {
-                return null;
+                var d = new NKDC(_users.ApplicationConnectionString, null);
+                var m = from o in d.E_SP_GetInvoices(null, application, null, null, null, contact, null, startRowIndex, pageSize)
+                        select new InvoiceViewModel { InvoiceID = o.InvoiceID };
+                return m;
             }
         }
        

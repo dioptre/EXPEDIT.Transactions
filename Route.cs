@@ -37,6 +37,24 @@ namespace EXPEDIT.Transactions
                  new RouteDescriptor {
                     Priority = 5,
                     Route = new Route(
+                        "Transactions/Paged/{action}/{pageSize}/{offset}",
+                        new RouteValueDictionary {
+                            {"area", "EXPEDIT.Transactions"},
+                            {"controller", "User"}                            
+                        },
+                        new RouteValueDictionary {
+                            {"area", "EXPEDIT.Transactions"},
+                            {"controller", "User"},                          
+                        },
+                        new RouteValueDictionary {
+                            {"area", "EXPEDIT.Transactions"},                            
+                            {"controller", "User"}
+                        },
+                        new MvcRouteHandler())
+                },
+                 new RouteDescriptor {
+                    Priority = 5,
+                    Route = new Route(
                         "Transactions/{controller}/{action}/{id}/{ref}",
                         new RouteValueDictionary {
                             {"area", "EXPEDIT.Transactions"},
@@ -151,6 +169,25 @@ namespace EXPEDIT.Transactions
                         },
                         new RouteValueDictionary {
                             {"area", "EXPEDIT.Transactions"}
+                        },
+                        new MvcRouteHandler())
+                },
+                new RouteDescriptor {
+                    Priority = 5,
+                    Route = new Route(
+                        "Store/{action}",
+                        new RouteValueDictionary {
+                            {"area", "EXPEDIT.Transactions"},
+                            {"controller", "User"},
+                            {"action", "Index"}
+                        },
+                        new RouteValueDictionary {
+                            {"area", "EXPEDIT.Transactions"},
+                            {"controller", "User"}
+                        },
+                        new RouteValueDictionary {
+                            {"area", "EXPEDIT.Transactions"},
+                            {"controller", "User"}
                         },
                         new MvcRouteHandler())
                 },

@@ -1,0 +1,11 @@
+﻿@model EXPEDIT.Transactions.ViewModels.AccountViewModel
+<div id="MyInvoicesPartialPagerPage">
+    Loading...
+</div>
+<ul class="pager">
+  <li><a href="#" id="MyInvoicesPartialPagerPrevious">Previous</a></li>
+  <li><a href="#" id="MyInvoicesPartialPagerNext">Next</a></li>
+</ul>
+<script language="javascript" type="text/javascript">
+    addPager(@Model.Offset, @Model.PageSize, '/Transactions/Paged/', 'MyInvoicesPartial');
+</script>

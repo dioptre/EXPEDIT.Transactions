@@ -244,6 +244,13 @@
     <Content Include="Styles\fonts\glyphicons-halflings-regular.ttf" />
     <Content Include="Styles\fonts\glyphicons-halflings-regular.woff" />
     <Content Include="Views\User\PurchasesPartial.cshtml" />
+    <Content Include="Views\User\PledgesPartial.cshtml" />
+    <Content Include="Views\User\ProfilePartial.cshtml" />
+    <Content Include="Views\User\MessagesPartial.cshtml" />
+    <Content Include="Views\User\ReferralsPartial.cshtml" />
+    <Content Include="Views\User\LicensesPartial.cshtml" />
+    <Content Include="Views\User\MyInvoicesPartial.cshtml" />
+    <Content Include="Views\User\MyInvoicesPartialPager.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\..\..\..\crednexus\src\main\CNX.Shared\CNX.Shared.csproj">
@@ -301,6 +308,13 @@
     <Compile Include="Services\TransactionsService.cs" />
     <Compile Include="ViewModels\ContractConditionViewModel.cs" />
     <Compile Include="ViewModels\AccountViewModel.cs" />
+    <Compile Include="ViewModels\ContactViewModel.cs" />
+    <Compile Include="ViewModels\ContactAddressViewModel.cs" />
+    <Compile Include="ViewModels\LicenseAssetModelPartViewModel.cs" />
+    <Compile Include="ViewModels\LicenseAssetViewModel.cs" />
+    <Compile Include="ViewModels\LicenseViewModel.cs" />
+    <Compile Include="ViewModels\InvoiceLineViewModel.cs" />
+    <Compile Include="ViewModels\InvoiceViewModel.cs" />
     <Compile Include="ViewModels\SoftwareSubmissionViewModel.cs" />
     <Compile Include="ViewModels\PartnerViewModel.cs" />
     <Compile Include="ViewModels\DownloadViewModel.cs" />

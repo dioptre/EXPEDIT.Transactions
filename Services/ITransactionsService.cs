@@ -12,7 +12,6 @@ namespace EXPEDIT.Transactions.Services
      [ServiceContract]
     public interface ITransactionsService : IDependency 
     {
-
         [OperationContract]
         Guid? GetInvoice(Guid invoiceID, string requestIPAddress);
 
@@ -81,6 +80,9 @@ namespace EXPEDIT.Transactions.Services
 
          [OperationContract]
          bool SubmitSoftware(SoftwareSubmissionViewModel s);
+
+         [OperationContract]
+         IEnumerable<InvoiceViewModel> GetInvoices(int? startRowIndex = null, int? pageSize = null);
 
     }
 }
