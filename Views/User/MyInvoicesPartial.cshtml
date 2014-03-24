@@ -7,12 +7,16 @@
     @foreach (var p in Model.Invoices) {
 <tr>   
 <td>
-    @p.InvoiceID
-@*<h4>&#35;@p.PagedRow @p.ContactName @p.RegardingName @(p.ProductName ?? p.SubjectName) <small>@p.StatusName</small></h4>
-<p>@Html.Raw(p.Comment)...</p>
-<p>@(@p.Updated != null ? "<strong>Last Updated: " + @p.Updated +"</strong>" : null)<a style="float:right;" class="btn btn-small" href="@Url.Action("updateticket", new { area="EXPEDIT.Tickets", controller="User", id=p.CommunicationID})">open</a></p>*@
+<strong>@(p.Dated.HasValue ? p.Dated.Value.ToString("dd MMMM yyyy") : "")</strong>
+    @foreach (var l in p.InvoiceLines) {
+        <h4>&#35; @l.Description  <small>@string.Format("x {0:f2}", l.Quantity) @(l.Subtotal.HasValue ? string.Format("@ {0}{1:f2}{2}", p.CurrencyPrefix, l.Subtotal, p.CurrencyPostfix) : "")</small></h4>
+    }
+    <h4 style="color:black; text-align: right;">@(p.Total.HasValue ? string.Format("{0}{1:f2}{2}", p.CurrencyPrefix, p.Total, p.CurrencyPostfix) : "")</h4>
+    <p style="text-align: right;"><a class="btn btn-small" href="/store/user/getinvoice/@p.InvoiceID"><i class="glyphicon icon-download-alt"></i>&nbsp;Download Invoice</a></p>
 </td>
 </tr>
 }
 </tbody>
 </table>
+
+

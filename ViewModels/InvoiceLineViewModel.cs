@@ -19,6 +19,7 @@ namespace EXPEDIT.Transactions.ViewModels
         public decimal? Quantity { get; set; }
         public Guid? TaxID { get; set; }
         public decimal? Tax { get; set; }
+        public string TaxName { get; set; }
         public decimal? DiscountAmount { get; set; }
         public decimal? OriginalSubtotal { get; set; }
         public decimal? Subtotal { get; set; }

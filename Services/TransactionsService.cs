@@ -1289,9 +1289,57 @@ namespace EXPEDIT.Transactions.Services {
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new NKDC(_users.ApplicationConnectionString, null);
-                var m = from o in d.E_SP_GetInvoices(null, application, null, null, null, contact, null, startRowIndex, pageSize)
-                        select new InvoiceViewModel { InvoiceID = o.InvoiceID };
-                return m.ToArray();
+                var r = (from o in d.E_SP_GetInvoices(null, application, null, null, null, contact, null, startRowIndex, pageSize)
+                        select o);
+                var m = new List<InvoiceViewModel>();
+                foreach (var o in r)
+                {
+                    InvoiceViewModel i = m.LastOrDefault();
+                    if (i == null || i.InvoiceID != o.InvoiceID)
+                    {
+                        i = new InvoiceViewModel
+                        {
+                            InvoiceID = o.InvoiceID,                           
+                            FreightTax = o.FreightTax,
+                            FreightAmount = o.FreightAmount,
+                            DiscountIncludesFreight = o.DiscountIncludesFreight,
+                            DiscountAllFreight = o.DiscountAllFreight,
+                            DiscountAmount = o.DiscountAmount,
+                            TaxAmount = o.TaxAmount,
+                            OriginalTotal = o.OriginalTotal,
+                            CurrencyID = o.CurrencyID,
+                            CurrencyPrefix = o.CurrencyPrefix,
+                            CurrencyPostfix = o.CurrencyPostfix,
+                            Total = o.Total,
+                            Dated = o.Dated,
+                            Communicated = o.Communicated,
+                            InvoiceLines = new List<InvoiceLineViewModel>()
+
+                        };
+                        m.Add(i);
+                    }
+                    if (o.InvoiceLineID.HasValue && !i.InvoiceLines.Any(f => f.InvoiceLineID == o.InvoiceLineID))
+                    {
+                        ((List<InvoiceLineViewModel>)i.InvoiceLines).Add(new InvoiceLineViewModel
+                        {
+                            InvoiceLineID = o.InvoiceLineID,
+                            InvoiceID = o.InvoiceID,
+                            SupplyItemID = o.SupplyItemID,
+                            ReferenceType = o.ReferenceType,
+                            ReferenceID = o.ReferenceID,
+                            Description = o.Description,
+                            Quantity = o.Quantity,
+                            TaxID = o.TaxID,
+                            Tax = o.Tax,
+                            TaxName = o.TaxName,
+                            DiscountAmount = o.DiscountAmount,
+                            OriginalSubtotal = o.OriginalSubtotal,
+                            Subtotal = o.Subtotal
+                        });
+                    }
+
+                }
+                return m;
             }
         }
 

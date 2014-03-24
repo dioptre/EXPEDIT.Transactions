@@ -7,12 +7,21 @@
     @foreach (var p in Model.Licenses) {
 <tr>   
 <td>
-    @p.LicenseID
-@*<h4>&#35;@p.PagedRow @p.ContactName @p.RegardingName @(p.ProductName ?? p.SubjectName) <small>@p.StatusName</small></h4>
-<p>@Html.Raw(p.Comment)...</p>
-<p>@(@p.Updated != null ? "<strong>Last Updated: " + @p.Updated +"</strong>" : null)<a style="float:right;" class="btn btn-small" href="@Url.Action("updateticket", new { area="EXPEDIT.Tickets", controller="User", id=p.CommunicationID})">open</a></p>*@
+<strong>@(p.ValidFrom.HasValue ? p.ValidFrom.Value.ToString("dd MMMM yyyy") + (p.Expiry.HasValue ? "-" + p.Expiry.Value.ToString("dd MMMM yyyy") : "" ) : "")</strong>
+    @foreach (var l in p.LicenseAssets) {
+        <h4>&#35; @l.ModelName@*<small>&nbsp;@(l.ProRataCost.HasValue && l.ProRataCost.Value > 0m ? string.Format("Supported @ {0:f2} per {1}", l.ProRataCost, p.ValidForUnitName) : "")</small>*@</h4>
+        <h4 style="color:black;">@p.LicenseID</h4>
+        foreach (var m in l.LicenseAssetModelParts)
+         {
+            <p>@m.PartName</p>
+         }
+    }    
+    @foreach (var d in p.LicenseDownloads) {
+        <p style="text-align: right;"><a class="btn btn-small" href="/share/download/@d.DownloadID"><i class="glyphicon icon-download-alt"></i>&nbsp;Download @d.Description</a></p>
+    }
 </td>
 </tr>
 }
 </tbody>
 </table>
+

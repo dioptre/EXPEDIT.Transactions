@@ -9,8 +9,8 @@ using NKD.Models;
 
 namespace EXPEDIT.Transactions.Services
 {
-     [ServiceContract]
-    public interface ITransactionsService : IDependency 
+    [ServiceContract]
+    public interface ITransactionsService : IDependency
     {
         [OperationContract]
         Guid? GetInvoice(Guid invoiceID, string requestIPAddress);
@@ -18,74 +18,74 @@ namespace EXPEDIT.Transactions.Services
         [OperationContract]
         Guid? GetOrderInvoice(Guid orderID, string requestIPAddress);
 
-         [OperationContract]
-         PartnerViewModel GetPartnership(ref PartnerViewModel partnership);
+        [OperationContract]
+        PartnerViewModel GetPartnership(ref PartnerViewModel partnership);
 
-         [OperationContract]
-         bool UpdatePartnership(PartnerViewModel m, string IPAddress);
+        [OperationContract]
+        bool UpdatePartnership(PartnerViewModel m, string IPAddress);
 
-         [OperationContract]
-         bool SendTwoStepAuthentication(ref VerifyMobileModel verification);
+        [OperationContract]
+        bool SendTwoStepAuthentication(ref VerifyMobileModel verification);
 
-         [OperationContract]
-         void MakePayment(ref OrderViewModel order);
+        [OperationContract]
+        void MakePayment(ref OrderViewModel order);
 
-         [OperationContract]
-         void MakePaymentResult(ref OrderViewModel order);
+        [OperationContract]
+        void MakePaymentResult(ref OrderViewModel order);
 
-         [OperationContract]
-         void PreparePayment(ref OrderViewModel order);
+        [OperationContract]
+        void PreparePayment(ref OrderViewModel order);
 
-         [OperationContract]
-         void PreparePaymentResult(ref OrderViewModel order);
+        [OperationContract]
+        void PreparePaymentResult(ref OrderViewModel order);
 
-         [OperationContract]
-         OrderViewModel GetOrder(Guid orderID);
+        [OperationContract]
+        OrderViewModel GetOrder(Guid orderID);
 
-         [OperationContract]
-         void GetOrderOwner(ref OrderViewModel order);
+        [OperationContract]
+        void GetOrderOwner(ref OrderViewModel order);
 
-         [OperationContract]
-         bool GetOrderPaid(Guid orderID);
+        [OperationContract]
+        bool GetOrderPaid(Guid orderID);
 
-         [OperationContract]
-         bool GetOrderProcessed(Guid orderID);
+        [OperationContract]
+        bool GetOrderProcessed(Guid orderID);
 
-         [OperationContract]
-         void UpdateOrder(OrderViewModel order);
+        [OperationContract]
+        void UpdateOrder(OrderViewModel order);
 
-         [OperationContract]
-         void UpdateOrderOwner(OrderViewModel order);
+        [OperationContract]
+        void UpdateOrderOwner(OrderViewModel order);
 
-         [OperationContract]
-         void UpdateOrderPaid(OrderViewModel order);
+        [OperationContract]
+        void UpdateOrderPaid(OrderViewModel order);
 
-         [OperationContract]
-         IEnumerable<DownloadViewModel> GetDownloads(Guid orderID);
+        [OperationContract]
+        IEnumerable<DownloadViewModel> GetDownloads(Guid orderID);
 
-         [OperationContract]
-         IEnumerable<ProductViewModel> GetProducts(string text = null, Guid? supplierModelID = null, int? startRowIndex = null, int? pageSize = null);
+        [OperationContract]
+        IEnumerable<ProductViewModel> GetProducts(string text = null, Guid? supplierModelID = null, int? startRowIndex = null, int? pageSize = null);
 
-         [OperationContract]
-         ProductViewModel GetProduct(Guid supplierModelID);
+        [OperationContract]
+        ProductViewModel GetProduct(Guid supplierModelID);
 
-         [OperationContract]
-         void IncrementDownloadCounter(Guid productID);
+        [OperationContract]
+        void IncrementDownloadCounter(Guid productID);
 
-         [OperationContract]
-         void IncrementBuyCounter(Guid supplierModelID, Guid modelID);
-         
-         [OperationContract]
-         IEnumerable<ContractConditionViewModel> GetContractConditions(Guid[] referenceIDs);
+        [OperationContract]
+        void IncrementBuyCounter(Guid supplierModelID, Guid modelID);
 
-         [OperationContract]
-         bool SubmitSoftware(SoftwareSubmissionViewModel s);
+        [OperationContract]
+        IEnumerable<ContractConditionViewModel> GetContractConditions(Guid[] referenceIDs);
 
-         [OperationContract]
-         IEnumerable<InvoiceViewModel> GetInvoices(int? startRowIndex = null, int? pageSize = null);
+        [OperationContract]
+        bool SubmitSoftware(SoftwareSubmissionViewModel s);
 
-         [OperationContract]
-         IEnumerable<LicenseViewModel> GetLicenses(int? startRowIndex = null, int? pageSize = null);
+        [OperationContract]
+        IEnumerable<InvoiceViewModel> GetInvoices(int? startRowIndex = null, int? pageSize = null);
+
+        [OperationContract]
+        IEnumerable<LicenseViewModel> GetLicenses(int? startRowIndex = null, int? pageSize = null);
 
     }
 }

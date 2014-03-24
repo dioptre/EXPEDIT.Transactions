@@ -3,7 +3,7 @@
 <td><img src="@Model.Thumbnail" alt="" style="padding: 4px; line-height: 19.5px; border: 1px solid #ddd;" width="60" height="60"></td>
 <td>
 <h2>@Model.Title <small>@Model.Subtitle</small></h2>
-<p>@Model.HTML</p>
+<p>@Html.Raw(Model.HTML)</p>
     <p>@Html.LabelFor(f=>f.Units)</p>
     <p>@Html.TextBoxFor(f => f.Units, new { @readonly = true })</p>
     <p>@Html.LabelFor(f=>f.CostText)</p>
