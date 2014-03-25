@@ -72,6 +72,7 @@ namespace EXPEDIT.Transactions.Controllers
             _transactions.IncrementBuyCounter(supplierModelID, modelID);
             var op = new OrderProductViewModel(p) { Units = 1, ContractConditions = _transactions.GetContractConditions(new Guid[] { supplierModelID, modelID }) };
             var m = new OrderViewModel() { OrderID = Guid.NewGuid(), Products = new OrderProductViewModel[] { op } }; //TODO Update existing order before creating a new one
+            Response.SetCookie(new HttpCookie("OrderID", m.OrderID.ToString()));
             _transactions.UpdateOrder(m);
             return View(m);
         }
@@ -120,6 +121,9 @@ namespace EXPEDIT.Transactions.Controllers
                 return new HttpUnauthorizedResult("Unauthorized access to unpaid order.");
             var m = _transactions.GetOrder(orderID);
             m.Downloads = _transactions.GetDownloads(orderID);
+            var clearCookie = new HttpCookie("OrderID");
+            clearCookie.Expires = DateTime.UtcNow.AddDays(-1000);
+            Response.SetCookie(clearCookie);
             return View(m);
         }
 
@@ -340,9 +344,32 @@ namespace EXPEDIT.Transactions.Controllers
         public ActionResult MyLicensesPartialPager(AccountViewModel m)
         {
             return View(m);
-        }     
+        }
 
-      
+
+        [Authorize]
+        [HttpGet]
+        [Themed(Enabled = false)]
+        public ActionResult UpdateProfilePartial()
+        {
+            var m = new AccountViewModel();
+            m.Contact = _transactions.GetContact();
+            return View(m);
+        }
+
+
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Themed(Enabled = false)]
+        public ActionResult UpdateProfilePartial(AccountViewModel m)
+        {
+            if (m == null || !_transactions.UpdateAccount(m))
+                return new HttpStatusCodeResult(System.Net.HttpStatusCode.ExpectationFailed);
+            else
+                return new HttpStatusCodeResult(System.Net.HttpStatusCode.OK);
+        }
+
     }
 
 }

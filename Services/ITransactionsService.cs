@@ -40,7 +40,10 @@ namespace EXPEDIT.Transactions.Services
         void PreparePaymentResult(ref OrderViewModel order);
 
         [OperationContract]
-        OrderViewModel GetOrder(Guid orderID);
+        OrderViewModel GetOrder(Guid orderID, bool detailed=false);
+
+        [OperationContract]
+        OrderViewModel GetOrderLast(bool detailed=false);
 
         [OperationContract]
         void GetOrderOwner(ref OrderViewModel order);
@@ -89,7 +92,9 @@ namespace EXPEDIT.Transactions.Services
 
         [OperationContract]
         ContactViewModel GetContact(Guid? contactID = null);
-        
+
+        [OperationContract]
+        bool UpdateAccount(AccountViewModel m);
 
     }
 }

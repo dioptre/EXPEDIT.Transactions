@@ -155,14 +155,30 @@ namespace EXPEDIT.Transactions.Services {
             }
 
         }
-         
 
-        public OrderViewModel GetOrder(Guid orderID)
+
+        public OrderViewModel GetOrderLast(bool detailed=false)
+        {
+            var contact = _users.ContactID;
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new NKDC(_users.ApplicationConnectionString, null);
+                var id = (from o in d.Supplies where o.Version == 0 && o.VersionDeletedBy == null orderby o.DateOrdered descending select o.CustomerPurchaseOrderID).FirstOrDefault();
+                if (id.HasValue)
+                    return GetOrder(id.Value, detailed);
+                else
+                    return null;
+            }
+        }
+
+        public OrderViewModel GetOrder(Guid orderID, bool detailed=false)
         {
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new NKDC(_users.ApplicationConnectionString, null);
-                var items = (from o in d.SupplyItems where o.Supply.CustomerPurchaseOrderID==orderID && o.Version==0 && o.VersionDeletedBy == null 
+                IQueryable<OrderProductViewModel> items = null;
+                if (!detailed)
+                    items = (from o in d.SupplyItems where o.Supply.CustomerPurchaseOrderID==orderID && o.Version==0 && o.VersionDeletedBy == null 
                              select new OrderProductViewModel { 
                                  SupplierModelID = o.SupplierModelID, 
                                  SupplierPartID = o.SupplierPartID,
@@ -170,6 +186,24 @@ namespace EXPEDIT.Transactions.Services {
                                  PartID=o.PartID, 
                                  PaymentProviderProductID = o.ApplicationPaymentProviderProductID,
                                  PaymentProviderProductName= (o.ApplicationPaymentProviderProduct==null) ? null : o.ApplicationPaymentProviderProduct.PaymentProviderProductName 
+                             });
+                else
+                    items = (from o in d.SupplyItemDetailViews
+                             where o.CustomerPurchaseOrderID == orderID && o.Version == 0 && o.VersionDeletedBy == null
+                             select new OrderProductViewModel
+                             {
+                                 SupplierModelID = o.SupplierModelID,
+                                 SupplierPartID = o.SupplierPartID,
+                                 ModelID = o.ModelID,
+                                 PartID = o.PartID,
+                                 PaymentProviderProductID = o.ApplicationPaymentProviderProductID,
+                                 PartUnits = o.QuantityPart,
+                                 ModelUnits = o.QuantityModel,
+                                 LabourUnits = o.QuantityLabour,
+                                 Subtotal = o.Subtotal,
+                                 ModelName = o.StandardModelName,
+                                 CurrencyPostfix = o.PostfixCharacters,
+                                 CurrencyPrefix = o.PrefixCharacters
                              });
                 var m = new OrderViewModel { OrderID = orderID, Products = items.ToList() };
                 return m;
@@ -1469,9 +1503,10 @@ namespace EXPEDIT.Transactions.Services {
                              };
 
                 var a = ((List<ContactAddressViewModel>)c.ContactAddresses);
-                foreach (var ca in (from o in d.ContactAddresses where o.ContactID == contact && o.Version == 0 && o.VersionDeletedBy == null && o.Address.Version == 0 && o.Address.VersionDeletedBy == null select o.Address))
+                bool primary = true;
+                foreach (var ca in (from o in d.ContactAddresses where o.ContactID == contact && o.Version == 0 && o.VersionDeletedBy == null && o.Address.Version == 0 && o.Address.VersionDeletedBy == null orderby o.VersionUpdated descending select o.Address))
                 {
-                    a.Add(new ContactAddressViewModel
+                    var address = new ContactAddressViewModel
                     {
                         AddressID = ca.AddressID,
                         AddressTypeID = ca.AddressTypeID,
@@ -1492,12 +1527,86 @@ namespace EXPEDIT.Transactions.Services {
                         Email = ca.Email,
                         Mobile = ca.Mobile,
                         LocationID = ca.LocationID
-                    });
+                    };
+                    if (primary)
+                    {
+                        c.PrimaryAddress = address;
+                    }
+                    a.Add(address);
                     
                 }
                 return c;
             }
         }
-       
+
+        public bool UpdateAccount(AccountViewModel m)
+        {
+               
+            var contact = _users.ContactID;
+            var application = _users.ApplicationID;
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new NKDC(_users.ApplicationConnectionString, null);
+                //Ensure only owner can change details
+                if (m.Contact.ContactID.HasValue && m.Contact.ContactID.Value != contact)
+                    return false;
+                var c = (from o in d.Contacts where o.Version == 0 && o.VersionDeletedBy == null && o.ContactID==contact select o).Single();
+                var a = (from o in d.ContactAddresses where o.ContactID == contact && o.Version == 0 && o.VersionDeletedBy == null && o.Address.Version == 0 && o.Address.VersionDeletedBy == null orderby o.VersionUpdated descending select o.Address).FirstOrDefault();
+                if (a == null)
+                {
+                    a = new Address
+                    {
+                        AddressID = Guid.NewGuid(),
+                        VersionUpdated = DateTime.UtcNow
+                    };
+                    var ca = new ContactAddress
+                    {
+                        ContactAddressID = Guid.NewGuid(),
+                        AddressID = a.AddressID,
+                        ContactID = contact,
+                        VersionUpdated = DateTime.UtcNow
+                    };
+                    a.ContactAddresses.Add(ca);
+                    d.Addresses.AddObject(a);
+                }
+                if (!string.IsNullOrWhiteSpace(m.Contact.Title) && c.Title != m.Contact.Title)
+                    c.Title = m.Contact.Title;
+                if (!string.IsNullOrWhiteSpace(m.Contact.Firstname) && c.Firstname != m.Contact.Firstname)
+                    c.Firstname = m.Contact.Firstname;
+                if (!string.IsNullOrWhiteSpace(m.Contact.Surname) && c.Surname != m.Contact.Surname)
+                    c.Surname = m.Contact.Surname;
+                if (!string.IsNullOrWhiteSpace(m.Contact.DefaultEmail) && c.DefaultEmail != m.Contact.DefaultEmail)
+                {
+                    if (!_users.UpdateUserEmail(m.Contact.DefaultEmail))
+                        return false;
+                    c.DefaultEmail = m.Contact.DefaultEmail;
+                }
+                if (!string.IsNullOrWhiteSpace(m.Contact.DefaultEmail) && a.Email != m.Contact.DefaultEmail)
+                    a.Email = m.Contact.DefaultEmail; //Use the same email
+                if (!string.IsNullOrWhiteSpace(m.Contact.DefaultMobile) && c.DefaultMobile != m.Contact.DefaultMobile)
+                    c.DefaultMobile = m.Contact.DefaultMobile;
+                if (!string.IsNullOrWhiteSpace(m.Contact.DefaultMobile) && a.Mobile != m.Contact.DefaultMobile)
+                    a.Mobile = m.Contact.DefaultMobile; //Use the same mobile
+                if (a.AddressName != m.Contact.PrimaryAddress.AddressName)
+                    a.AddressName = m.Contact.PrimaryAddress.AddressName; //Company Name
+                if (!string.IsNullOrWhiteSpace(m.Contact.PrimaryAddress.Street) && a.Street != m.Contact.PrimaryAddress.Street)
+                    a.Street = m.Contact.PrimaryAddress.Street;
+                if (a.Extended != m.Contact.PrimaryAddress.Extended)
+                    a.Extended = m.Contact.PrimaryAddress.Extended;
+                if (!string.IsNullOrWhiteSpace(m.Contact.PrimaryAddress.City) && a.City != m.Contact.PrimaryAddress.City)
+                    a.City = m.Contact.PrimaryAddress.City;
+                if (!string.IsNullOrWhiteSpace(m.Contact.PrimaryAddress.State) && a.State != m.Contact.PrimaryAddress.State)
+                    a.State = m.Contact.PrimaryAddress.State;
+                if (!string.IsNullOrWhiteSpace(m.Contact.PrimaryAddress.Country) && a.Country != m.Contact.PrimaryAddress.Country)
+                    a.Country = m.Contact.PrimaryAddress.Country;
+                if (!string.IsNullOrWhiteSpace(m.Contact.PrimaryAddress.Postcode) && a.Postcode != m.Contact.PrimaryAddress.Postcode)
+                    a.Postcode = m.Contact.PrimaryAddress.Postcode; 
+
+                d.SaveChanges();
+                return true;
+            }           
+            
+            return false;
+        }
     }
 }

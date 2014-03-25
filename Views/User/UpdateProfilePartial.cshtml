@@ -1,0 +1,192 @@
+﻿@model EXPEDIT.Transactions.ViewModels.AccountViewModel
+
+@using (Html.BeginForm("UpdateProfilePartial", "User", new { area = "EXPEDIT.Transactions" }, FormMethod.Post, new { id = "form1", @class = "form" }))
+{
+@Html.AntiForgeryToken()
+<h2>Update My Details&nbsp;<small>(@Model.Contact.Username)</small></h2>
+<div class="editor-label">
+    @Html.LabelFor(x => x.Contact.Title)
+</div>
+<div class="editor-field">
+    @Html.TextBoxFor(x => x.Contact.Title)
+</div>
+<div class="editor-label">
+    @Html.LabelFor(x => x.Contact.Firstname)
+</div>
+<div class="editor-field">
+    @Html.TextBoxFor(x => x.Contact.Firstname)
+</div>
+<div class="editor-label">
+    @Html.LabelFor(x => x.Contact.Surname)
+</div>
+<div class="editor-field">
+    @Html.TextBoxFor(x => x.Contact.Surname)
+</div>
+<div class="editor-label">
+    @Html.LabelFor(x => x.Contact.DefaultEmail)
+</div>
+<div class="editor-field">
+    @Html.TextBoxFor(x => x.Contact.DefaultEmail)
+</div>  
+<div class="editor-label">
+    @Html.LabelFor(x => x.Contact.DefaultMobile)
+</div>
+<div class="editor-field">
+   @Html.TextBoxFor(x => x.Contact.DefaultMobile)
+</div>
+<div class="editor-label">
+    @Html.LabelFor(x => x.Contact.PrimaryAddress.AddressName)
+</div>
+<div class="editor-field">
+   @Html.TextBoxFor(x => x.Contact.PrimaryAddress.AddressName)
+</div>
+<div class="editor-label">
+    @Html.LabelFor(x => x.Contact.PrimaryAddress.Street)
+</div>
+<div class="editor-field">
+   @Html.TextBoxFor(x => x.Contact.PrimaryAddress.Street)
+</div>
+<div class="editor-label">
+    @Html.LabelFor(x => x.Contact.PrimaryAddress.Extended)
+</div>
+<div class="editor-field">
+   @Html.TextBoxFor(x => x.Contact.PrimaryAddress.Extended)
+</div>
+<div class="editor-label">
+    @Html.LabelFor(x => x.Contact.PrimaryAddress.City)
+</div>
+<div class="editor-field">
+   @Html.TextBoxFor(x => x.Contact.PrimaryAddress.City)
+</div>
+<div class="editor-label">
+    @Html.LabelFor(x => x.Contact.PrimaryAddress.State)
+</div>
+<div class="editor-field">
+   @Html.TextBoxFor(x => x.Contact.PrimaryAddress.State)
+</div>
+<div class="editor-label">
+    @Html.LabelFor(x => x.Contact.PrimaryAddress.Country)
+</div>
+<div class="editor-field">
+   @Html.TextBoxFor(x => x.Contact.PrimaryAddress.Country)
+</div>
+<div class="editor-label">
+    @Html.LabelFor(x => x.Contact.PrimaryAddress.Postcode)
+</div>
+<div class="editor-field">
+   @Html.TextBoxFor(x => x.Contact.PrimaryAddress.Postcode)
+</div>
+@*<div class="editor-label">
+    @Html.LabelFor(x => x.Contact.PrimaryAddress.Email)
+</div>
+<div class="editor-field">
+   @Html.TextBoxFor(x => x.Contact.PrimaryAddress.Email)
+</div>
+<div class="editor-label">
+    @Html.LabelFor(x => x.Contact.PrimaryAddress.Mobile)
+</div>
+<div class="editor-field">
+   @Html.TextBoxFor(x => x.Contact.PrimaryAddress.Mobile)
+</div>
+<div class="editor-label">
+    @Html.LabelFor(x => x.Contact.PrimaryAddress.Phone)
+</div>
+<div class="editor-field">
+   @Html.TextBoxFor(x => x.Contact.PrimaryAddress.Phone)
+</div>*@
+  <input class='submit-button' type='submit' />  
+    
+}
+
+
+<script type="text/javascript">
+        jQuery.validator.setDefaults({
+            debug: false,
+            success: "valid"
+        });
+        var request;
+        $("#form1").validate({
+            rules: {
+                "Contact.DefaultEmail": {
+                    required: true,
+                    email2: true
+                },
+                "Contact.Firstname": {
+                    required: true
+                },
+                "Contact.Surname": {
+                    required: true
+                },
+                "Contact.DefaultMobile": {
+                    required: true
+                }
+            },
+            submitHandler: function(form) {
+                // prevent default posting of form
+                event.preventDefault();
+                event.returnValue = false;
+
+                // abort any pending request
+                if (request) {
+                    request.abort();
+                }
+                // setup some local variables
+                var $form = $("#form1");
+                // let's select and cache all the fields
+                var $inputs = $form.find("input, select, button, textarea, hidden");
+                // serialize the data in the form
+                var serializedData = $form.serialize();
+
+                // let's disable the inputs for the duration of the ajax request
+                $inputs.prop("disabled", true);
+
+                // fire off the request to /form.php
+                request = $.ajax({
+                    url: '@Url.Action("UpdateProfilePartial", "User", new { area = "EXPEDIT.Transactions" } )',
+                    type: "post",
+                    data: serializedData
+                });
+
+                // callback handler that will be called on success
+                request.done(function (response, textStatus, jqXHR) {
+                    // log a message to the console
+                    alertify.success("Your details have been updated.");
+                });
+
+                // callback handler that will be called on failure
+                request.fail(function (jqXHR, textStatus, errorThrown) {
+                    // log the error to the console
+                    alertify.error("Please check your inputs and try again.");
+                    //alertify.error("The following error occured: " + textStatus, errorThrown);
+                });
+
+                // callback handler that will be called regardless
+                // if the request failed or succeeded
+                request.always(function () {
+                    // reenable the inputs
+                    $inputs.prop("disabled", false);
+                });
+            }            
+        });
+
+        $("#Contact_PrimaryAddress_Country").autocomplete({
+            source: function (request, response) {
+                $.ajax({
+                    url: "/share/getcountries/" + request.term,
+                    type: "GET",
+                    dataType: "json",
+                    //data: { id: request.term },
+                    success: function (data) {
+                        response($.map(data, function (item) {
+                            return {
+                                label: item.Text, value: item.Text , id: item.Text
+                            }
+                        }))
+                    }
+                })
+            }
+        });
+     
+
+
+</script>

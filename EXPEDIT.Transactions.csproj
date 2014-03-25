@@ -198,6 +198,8 @@
     <Content Include="LICENSE.TXT" />
     <None Include="Scripts\jquery.validate-vsdoc.js" />
     <None Include="Scripts\jquery-1.6.4-vsdoc.js" />
+    <Content Include="Scripts\alertify.js" />
+    <Content Include="Scripts\alertify.min.js" />
     <Content Include="Scripts\canvas-to-blob.min.js" />
     <Content Include="Scripts\jquery-1.6.4.js" />
     <Content Include="Scripts\jquery-1.6.4.min.js" />
@@ -219,6 +221,9 @@
     <Content Include="Scripts\jquery.validate.unobtrusive.min.js" />
     <Content Include="Scripts\load-image.min.js" />
     <Content Include="Scripts\tmpl.min.js" />
+    <Content Include="Styles\alertify.bootstrap.css" />
+    <Content Include="Styles\alertify.core.css" />
+    <Content Include="Styles\alertify.default.css" />
     <Content Include="Styles\blueimp-gallery.min.css" />
     <Content Include="Styles\bootstrap.min.css" />
     <Content Include="Styles\expedit-transactions.css" />
@@ -253,6 +258,8 @@
     <Content Include="Views\User\MyInvoicesPartialPager.cshtml" />
     <Content Include="Views\User\MyLicensesPartialPager.cshtml" />
     <Content Include="Views\User\MyLicensesPartial.cshtml" />
+    <Content Include="Views\User\UpdateProfilePartial.cshtml" />
+    <Content Include="Views\CartMini.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\..\..\..\crednexus\src\main\CNX.Shared\CNX.Shared.csproj">
@@ -295,10 +302,16 @@
       <Project>{79aed36e-abd0-4747-93d3-8722b042454b}</Project>
       <Name>Orchard.Users</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Orchard.Widgets\Orchard.Widgets.csproj">
+      <Project>{194d3ccc-1153-474d-8176-fde8d7d0d0bd}</Project>
+      <Name>Orchard.Widgets</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controllers\UserController.cs" />
+    <Compile Include="Handlers\CartMiniWidgetHandler.cs" />
     <Compile Include="Helpers\PdfHelper.cs" />
+    <Compile Include="Migrations.cs" />
     <Compile Include="Permissions.cs" />
     <Compile Include="ResourceManifest.cs" />
     <Compile Include="Route.cs" />

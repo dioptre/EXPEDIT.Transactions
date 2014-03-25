@@ -12,7 +12,11 @@ namespace EXPEDIT.Transactions.ViewModels
     {
         [Required, DisplayName("Purchase Units:")]
         public decimal Units { get; set; }
-
+        public decimal? Subtotal { get; set; }
+        public string ModelName { get; set; }
+        public decimal? LabourUnits { get; set; }
+        public decimal? PartUnits { get; set; }
+        public decimal? ModelUnits { get; set; }
         //Derived
         public decimal? Cost { get { return (PricePerUnit.HasValue ? PricePerUnit.Value * Units : default(decimal?)); } }
         [Required, DisplayName("Subtotal:")]

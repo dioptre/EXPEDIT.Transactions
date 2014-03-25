@@ -13,9 +13,11 @@ namespace EXPEDIT.Transactions.ViewModels
         //public Guid? ContactAddressID { get; set; }
         public Guid? AddressID { get; set; }
         public Guid? AddressTypeID { get; set; }
+        [DisplayName("Company")]
         public string AddressName { get; set; }
         public int Sequence { get; set; }
         public string Street { get; set; }
+        [DisplayName("Extended Address")]
         public string Extended { get; set; }
         public string City { get; set; }
         public string State { get; set; }

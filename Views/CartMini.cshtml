@@ -1,0 +1,6 @@
+﻿<h4>My Cart</h4>
+<p style="display:none;">Model.Order.OrderID</p>
+@foreach (var p in Model.Order.Products)
+{
+    <p>@(string.Format("{0:f2}x {1} @ {2}{3:f2}{4}", p.ModelUnits, p.ModelName, p.CurrencyPrefix, p.Subtotal, p.CurrencyPostfix))</p>
+}

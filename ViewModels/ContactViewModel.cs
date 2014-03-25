@@ -16,10 +16,10 @@ namespace EXPEDIT.Transactions.ViewModels
         public string Firstname { get; set; }
         public string Username { get; set; }
         public string Hash { get; set; }
-        [DisplayName("Default Email:")]
+        [DisplayName("Default Email")]
         public string DefaultEmail { get; set; }
         public DateTime? DefaultEmailValidated { get; set; }
-        [DisplayName("Default Mobile:")]
+        [DisplayName("Default Mobile")]
         public string DefaultMobile { get; set; }
         public DateTime? DefaultMobileValidated { get; set; }
         public string MiddleNames { get; set; }
@@ -32,7 +32,7 @@ namespace EXPEDIT.Transactions.ViewModels
         public string OAuthID { get; set; }
         public byte[] Photo { get; set; }
         public string ShortBiography { get; set; }
-
+        public ContactAddressViewModel PrimaryAddress { get; set; }
         public IEnumerable<ContactAddressViewModel> ContactAddresses { get; set; }
     }
  
