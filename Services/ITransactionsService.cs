@@ -6,6 +6,7 @@ using Orchard;
 using System.ServiceModel;
 using EXPEDIT.Transactions.ViewModels;
 using NKD.Models;
+using System.Collections.Specialized;
 
 namespace EXPEDIT.Transactions.Services
 {
@@ -46,6 +47,12 @@ namespace EXPEDIT.Transactions.Services
         OrderViewModel GetOrderLast(bool detailed=false);
 
         [OperationContract]
+        OrderViewModel GetOrderCurrent();
+
+        [OperationContract]
+        Guid? GetOrderCurrentID();
+
+        [OperationContract]
         void GetOrderOwner(ref OrderViewModel order);
 
         [OperationContract]
@@ -82,6 +89,9 @@ namespace EXPEDIT.Transactions.Services
         IEnumerable<ContractConditionViewModel> GetContractConditions(Guid[] referenceIDs);
 
         [OperationContract]
+        bool CheckContractConditions(Guid orderID);
+
+        [OperationContract]
         bool SubmitSoftware(SoftwareSubmissionViewModel s);
 
         [OperationContract]
@@ -91,10 +101,16 @@ namespace EXPEDIT.Transactions.Services
         IEnumerable<LicenseViewModel> GetLicenses(int? startRowIndex = null, int? pageSize = null);
 
         [OperationContract]
+        IEnumerable<SoftwareSubmissionViewModel> GetSoftware(int? startRowIndex = null, int? pageSize = null);
+
+        [OperationContract]
         ContactViewModel GetContact(Guid? contactID = null);
 
         [OperationContract]
         bool UpdateAccount(AccountViewModel m);
+
+        [OperationContract]
+        bool UpdateCart(NameValueCollection m);
 
     }
 }

@@ -260,6 +260,9 @@
     <Content Include="Views\User\MyLicensesPartial.cshtml" />
     <Content Include="Views\User\UpdateProfilePartial.cshtml" />
     <Content Include="Views\CartMini.cshtml" />
+    <Content Include="Views\User\SubmissionsPartial.cshtml" />
+    <Content Include="Views\User\MySoftwareSubmissionsPartialPager.cshtml" />
+    <Content Include="Views\User\MySoftwareSubmissionsPartial.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\..\..\..\crednexus\src\main\CNX.Shared\CNX.Shared.csproj">

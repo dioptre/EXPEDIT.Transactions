@@ -12,5 +12,6 @@
     @Html.Partial("Paid", Model)
 }
 else {
+    <p>Payment Provider Returned Error: @Model.PaymentResponseShort</p>
     <p>Please check your details and @Html.ActionLink("try again later.", "Confirm", new { area = "EXPEDIT.Transactions", controller = "User", id = Model.OrderID })</p>
 }

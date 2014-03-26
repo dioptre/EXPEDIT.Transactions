@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Web.Mvc;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace EXPEDIT.Transactions.ViewModels
 {
@@ -15,6 +16,7 @@ namespace EXPEDIT.Transactions.ViewModels
         public string PaymentRedirectURL { get; set; }
         public string PaymentData { get; set; }
         public string PaymentResponse { get; set; }
+        public string PaymentResponseShort { get; set; }
         public string PaymentQuery { get; set; }
         public string PaymentQueryResponse { get; set; }
         public uint PaymentStatus { get; set; } //EXPEDIT.Transactions.Services.Payments.PaymentUtils.PaymentStatus
@@ -40,8 +42,15 @@ namespace EXPEDIT.Transactions.ViewModels
         public Guid? PaymentAddressID { get; set; }
         public string PaymentReference { get; set; }
         public IEnumerable<DownloadViewModel> Downloads { get; set; }
-
+        public IEnumerable<ContractConditionViewModel> CompleteContractConditions { get; set; }
         public SelectList TransactionType { get; set; }
 
+
+        [DisplayName("Order Terms:")]
+        public string OrderTerms
+        {
+
+            get { return string.Join("\r\n", (from o in CompleteContractConditions select o.ContractText).ToArray()); }
+        }
     }
 }

@@ -1,0 +1,13 @@
+﻿@model EXPEDIT.Transactions.ViewModels.AccountViewModel
+<h2>Software Submissions</h2>
+@if (!AuthorizedFor(EXPEDIT.Transactions.Permissions.Partner)) { 
+        @:<p><strong>You need to sign up...</strong></p><p><a class="btn btn-small" href="/store/user/partneragreement"><i class="glyphicon icon-star"></i>&nbsp;<span>Become a Partner</span></a></p>
+} else {
+<a class="btn btn-small btn-primary" href="/store/submitsoftware"><i class="glyphicon icon-upload-alt"></i>&nbsp;<span>Upload My Software</span></a>
+<div id="MySoftwareSubmissions">
+    Loading...
+</div>
+<script>
+    $("#MySoftwareSubmissions").load('/store/user/mysoftwaresubmissionspartialpager/3/1');
+</script> 
+}

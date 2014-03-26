@@ -175,6 +175,11 @@ jQuery.validator.addMethod("dateCC", function (value, element) {
 }, "Please enter a correct date");
 
 
+jQuery.validator.addMethod('positiveNumber',
+    function (value) {
+        return Number(value) > -1;
+    }, 'Enter a positive number.');
+
 /**
  * IBAN is the international bank account number.
  * It has a country - specific format, that is checked here too

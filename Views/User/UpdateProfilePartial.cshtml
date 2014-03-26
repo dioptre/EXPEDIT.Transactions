@@ -105,68 +105,71 @@
             success: "valid"
         });
         var request;
-        $("#form1").validate({
-            rules: {
-                "Contact.DefaultEmail": {
-                    required: true,
-                    email2: true
-                },
-                "Contact.Firstname": {
-                    required: true
-                },
-                "Contact.Surname": {
-                    required: true
-                },
-                "Contact.DefaultMobile": {
-                    required: true
-                }
-            },
-            submitHandler: function(form) {
+        $(document).ready(function () {
+            $("#form1").submit(function (e) {
                 // prevent default posting of form
-                event.preventDefault();
-                event.returnValue = false;
+                e.preventDefault();
+                e.returnValue = false;
+            }).validate({
+                rules: {
+                    "Contact.DefaultEmail": {
+                        required: true,
+                        email2: true
+                    },
+                    "Contact.Firstname": {
+                        required: true
+                    },
+                    "Contact.Surname": {
+                        required: true
+                    },
+                    "Contact.DefaultMobile": {
+                        required: true
+                    }
+                },
+                submitHandler: function (form) {
 
-                // abort any pending request
-                if (request) {
-                    request.abort();
+                    // abort any pending request
+                    if (request) {
+                        request.abort();
+                    }
+                    // setup some local variables
+                    var $form = $("#form1");
+                    // let's select and cache all the fields
+                    var $inputs = $form.find("input, select, button, textarea, hidden");
+                    // serialize the data in the form
+                    var serializedData = $form.serialize();
+
+                    // let's disable the inputs for the duration of the ajax request
+                    $inputs.prop("disabled", true);
+
+                    // fire off the request to /form.php
+                    request = $.ajax({
+                        url: '@Url.Action("UpdateProfilePartial", "User", new { area = "EXPEDIT.Transactions" } )',
+                        type: "post",
+                        data: serializedData
+                    });
+
+                    // callback handler that will be called on success
+                    request.done(function (response, textStatus, jqXHR) {
+                        // log a message to the console
+                        alertify.success("Your details have been updated.");
+                    });
+
+                    // callback handler that will be called on failure
+                    request.fail(function (jqXHR, textStatus, errorThrown) {
+                        // log the error to the console
+                        alertify.error("Please check your inputs and try again.");
+                        //alertify.error("The following error occured: " + textStatus, errorThrown);
+                    });
+
+                    // callback handler that will be called regardless
+                    // if the request failed or succeeded
+                    request.always(function () {
+                        // reenable the inputs
+                        $inputs.prop("disabled", false);
+                    });
                 }
-                // setup some local variables
-                var $form = $("#form1");
-                // let's select and cache all the fields
-                var $inputs = $form.find("input, select, button, textarea, hidden");
-                // serialize the data in the form
-                var serializedData = $form.serialize();
-
-                // let's disable the inputs for the duration of the ajax request
-                $inputs.prop("disabled", true);
-
-                // fire off the request to /form.php
-                request = $.ajax({
-                    url: '@Url.Action("UpdateProfilePartial", "User", new { area = "EXPEDIT.Transactions" } )',
-                    type: "post",
-                    data: serializedData
-                });
-
-                // callback handler that will be called on success
-                request.done(function (response, textStatus, jqXHR) {
-                    // log a message to the console
-                    alertify.success("Your details have been updated.");
-                });
-
-                // callback handler that will be called on failure
-                request.fail(function (jqXHR, textStatus, errorThrown) {
-                    // log the error to the console
-                    alertify.error("Please check your inputs and try again.");
-                    //alertify.error("The following error occured: " + textStatus, errorThrown);
-                });
-
-                // callback handler that will be called regardless
-                // if the request failed or succeeded
-                request.always(function () {
-                    // reenable the inputs
-                    $inputs.prop("disabled", false);
-                });
-            }            
+            });
         });
 
         $("#Contact_PrimaryAddress_Country").autocomplete({

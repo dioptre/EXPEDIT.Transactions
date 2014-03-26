@@ -17,6 +17,7 @@ namespace EXPEDIT.Transactions.ViewModels
 
         public IEnumerable<InvoiceViewModel> Invoices { get; set; }
         public IEnumerable<LicenseViewModel> Licenses { get; set; }
+        public IEnumerable<SoftwareSubmissionViewModel> SoftwareSubmissions { get; set; }
         public int? Offset { get; set; }
         public int? PageSize { get; set; }
 

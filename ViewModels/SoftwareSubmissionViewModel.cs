@@ -24,5 +24,11 @@ namespace EXPEDIT.Transactions.ViewModels
         public Dictionary<Guid, HttpPostedFileBase> Files { get; set; }
         [JsonIgnore]
         public Dictionary<Guid, int> FileLengths { get; set; }
+        [JsonIgnore]
+        public Dictionary<Guid, string> ShareFiles { get; set; }
+        [JsonIgnore]
+        public DateTime? Uploaded { get; set; }
+        [JsonIgnore]
+        public long? RowNumber { get; set; }
     }
 }

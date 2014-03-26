@@ -10,17 +10,22 @@ namespace EXPEDIT.Transactions.ViewModels
 {
     public class OrderProductViewModel : ProductViewModel
     {
-        [Required, DisplayName("Purchase Units:")]
-        public decimal Units { get; set; }
-        public decimal? Subtotal { get; set; }
-        public string ModelName { get; set; }
-        public decimal? LabourUnits { get; set; }
-        public decimal? PartUnits { get; set; }
-        public decimal? ModelUnits { get; set; }
         //Derived
-        public decimal? Cost { get { return (PricePerUnit.HasValue ? PricePerUnit.Value * Units : default(decimal?)); } }
-        [Required, DisplayName("Subtotal:")]
-        public string CostText { get { return string.Format("{0} {1} {2}", CurrencyPrefix, Cost, CurrencyPostfix); } }
+        public decimal? Cost
+        {
+            get
+            {
+                var modelCost = PricePerModelUnit.HasValue && ModelUnits.HasValue ? PricePerModelUnit.Value * ModelUnits.Value : default(decimal?);
+                var partCost = PricePerPartUnit.HasValue && PartUnits.HasValue ? PricePerPartUnit.Value * PartUnits.Value : default(decimal?);
+                var labourCost = PricePerLabourUnit.HasValue && LabourUnits.HasValue ? PricePerLabourUnit.Value * LabourUnits.Value : default(decimal?);
+                if (modelCost.HasValue || partCost.HasValue || labourCost.HasValue)
+                    return ((modelCost.HasValue) ? modelCost.Value : 0m) + ((partCost.HasValue) ? partCost.Value : 0m) + ((labourCost.HasValue) ? labourCost.Value : 0m);
+                else 
+                     return default(decimal?);
+            }
+        }
+        [Required, DisplayName("Subtotal:*")]
+        public string CostText { get { return string.Format("{0} {1:f2} {2}", CurrencyPrefix, Cost, CurrencyPostfix); } }
         public bool Paid { get; set; }
 
         public OrderProductViewModel() : base()

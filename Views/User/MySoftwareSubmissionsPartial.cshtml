@@ -1,0 +1,28 @@
+﻿@model EXPEDIT.Transactions.ViewModels.AccountViewModel
+<table class="table table-striped">
+<thead>
+<tr><th></th></tr>
+</thead>
+<tbody>
+    @foreach (var p in Model.SoftwareSubmissions) {
+<tr>   
+<td>
+<strong>@p.Uploaded</strong>
+    <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">&#35; @p.RowNumber</h3>
+        </div>
+        <div class="panel-body">
+          <p>@Html.Raw(p.Description)</p>
+        </div>
+      </div>    
+    @foreach (var l in p.ShareFiles)
+    {
+        <p style="text-align: right;"><a class="btn btn-small" href="/share/file/@l.Key"><i class="glyphicon icon-download-alt"></i>&nbsp;Download @l.Value</a></p>
+    }    
+</td>
+</tr>
+}
+</tbody>
+</table>
+

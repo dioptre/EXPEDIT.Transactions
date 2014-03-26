@@ -15,7 +15,8 @@ using NKD.Helpers;
 using System.Web;
 using System.Collections.Generic;
 using EXPEDIT.Share.Services;
-
+using Orchard.Mvc;
+using Orchard.Logging;
 
 namespace EXPEDIT.Transactions.Controllers
 {
@@ -30,11 +31,13 @@ namespace EXPEDIT.Transactions.Controllers
         public UserController(IOrchardServices services, ITransactionsService transactions, IContentService content)
         {
             _services = services;
+            Logger = NullLogger.Instance;        
             T = NullLocalizer.Instance;
             _transactions = transactions;
             _content = content;
         }
 
+        public ILogger Logger { get; set; }
         public Localizer T { get; set; }
 
         [ValidateInput(false)]
@@ -62,19 +65,53 @@ namespace EXPEDIT.Transactions.Controllers
         [Authorize]
         public ActionResult Buy(string id, string @ref)
         {
+            Action<Guid> sc = (oid) =>
+            {
+                var cookie = new HttpCookie("OrderID", oid.ToString());
+                cookie.Expires = DateTime.UtcNow.AddYears(5);
+                Response.SetCookie(cookie);
+            };
             var supplierModelID = new Guid(id);
             Guid modelID = default(Guid);
-            var p = _transactions.GetProduct(supplierModelID);
+            var newProduct = _transactions.GetProduct(supplierModelID);
             if (!string.IsNullOrWhiteSpace(@ref))
                 modelID = new Guid(@ref);
             else
-                modelID = p.ModelID.Value;
+                modelID = newProduct.ModelID.Value;
             _transactions.IncrementBuyCounter(supplierModelID, modelID);
-            var op = new OrderProductViewModel(p) { Units = 1, ContractConditions = _transactions.GetContractConditions(new Guid[] { supplierModelID, modelID }) };
-            var m = new OrderViewModel() { OrderID = Guid.NewGuid(), Products = new OrderProductViewModel[] { op } }; //TODO Update existing order before creating a new one
-            Response.SetCookie(new HttpCookie("OrderID", m.OrderID.ToString()));
-            _transactions.UpdateOrder(m);
-            return View(m);
+
+            var order = _transactions.GetOrderCurrent();
+            var checkedContract = false;
+            //If this is a +1, go to confirm
+            OrderProductViewModel oldProduct = null;
+            var oldModels = new List<Guid>();
+            if (order != null && order.Products != null)
+            {
+                oldProduct = order.Products.FirstOrDefault(f => f.SupplierModelID == supplierModelID);
+                if (order.OrderID.HasValue && _transactions.CheckContractConditions(order.OrderID.Value))
+                    checkedContract = true;
+                oldModels.AddRange(order.Products.Where(f => f.ModelID.HasValue).Select(f => f.ModelID.Value).Union(order.Products.Where(f => f.SupplierModelID.HasValue).Select(f => f.SupplierModelID.Value)));
+            }
+            if (oldProduct != null && oldProduct.ModelUnits.HasValue && oldProduct.ModelUnits.Value > 0 && checkedContract)
+            {
+                oldProduct.ModelUnits++;
+                sc(order.OrderID.Value);
+                _transactions.UpdateOrder(order);
+                return RedirectToAction("Confirm", new { id = order.OrderID });
+            }
+            else
+            {
+                var cc = _transactions.GetContractConditions(new Guid[] { supplierModelID, modelID });
+                var op = new OrderProductViewModel(newProduct) { ModelUnits = 1, ContractConditions = cc };
+                var allConditions = _transactions.GetContractConditions(oldModels.Union(new Guid[] { supplierModelID, modelID }).ToArray());
+                order = new OrderViewModel() {
+                    OrderID = (order == null || !order.OrderID.HasValue) ? Guid.NewGuid() : order.OrderID, 
+                    CompleteContractConditions = allConditions, 
+                    Products = (order == null || order.Products == null) ? new OrderProductViewModel[] { op } : order.Products.Where(f=>f.ModelID!=modelID).Concat(new OrderProductViewModel[] { op }) };
+                sc(order.OrderID.Value);
+                _transactions.UpdateOrder(order);
+                return View(order);
+            }
         }
 
         [Authorize]
@@ -107,6 +144,13 @@ namespace EXPEDIT.Transactions.Controllers
                 {
                     _transactions.UpdateOrderPaid(m);
                     m.Downloads = _transactions.GetDownloads(orderID);
+                    var clearCookie = new HttpCookie("OrderID");
+                    clearCookie.Expires = DateTime.UtcNow.AddDays(-1000);
+                    Response.SetCookie(clearCookie);
+                }
+                else
+                {
+                    Logger.Warning(string.Format("******Bad Transaction for Order:{0}. Response:{1}", m.OrderID, m.PaymentResponse));
                 }
             }
             _content.UpdateAffiliate();
@@ -116,14 +160,14 @@ namespace EXPEDIT.Transactions.Controllers
         [Authorize]
         public ActionResult Paid(string id)
         {
+            var clearCookie = new HttpCookie("OrderID");
+            clearCookie.Expires = DateTime.UtcNow.AddDays(-1000);
+            Response.SetCookie(clearCookie);
             Guid orderID = new Guid(id);
             if (!_transactions.GetOrderPaid(orderID))
                 return new HttpUnauthorizedResult("Unauthorized access to unpaid order.");
             var m = _transactions.GetOrder(orderID);
             m.Downloads = _transactions.GetDownloads(orderID);
-            var clearCookie = new HttpCookie("OrderID");
-            clearCookie.Expires = DateTime.UtcNow.AddDays(-1000);
-            Response.SetCookie(clearCookie);
             return View(m);
         }
 
@@ -289,15 +333,6 @@ namespace EXPEDIT.Transactions.Controllers
             return View(m);
         }
 
-        [Authorize]
-        [Themed(Enabled = false)]
-        public ActionResult LicensesPartial(AccountViewModel m)
-        {
-            if (m == null)
-                m = new AccountViewModel();
-            return View(m);
-        }
-
 
         [Themed(Enabled = false)]
         [Authorize]
@@ -319,6 +354,15 @@ namespace EXPEDIT.Transactions.Controllers
         [Authorize]
         public ActionResult MyInvoicesPartialPager(AccountViewModel m)
         {
+            return View(m);
+        }
+
+        [Authorize]
+        [Themed(Enabled = false)]
+        public ActionResult LicensesPartial(AccountViewModel m)
+        {
+            if (m == null)
+                m = new AccountViewModel();
             return View(m);
         }
 
@@ -346,6 +390,40 @@ namespace EXPEDIT.Transactions.Controllers
             return View(m);
         }
 
+        [Authorize]
+        [Themed(Enabled = false)]
+        public ActionResult SubmissionsPartial(AccountViewModel m)
+        {
+            if (m == null)
+                m = new AccountViewModel();
+            return View(m);
+        }
+
+
+        [Themed(Enabled = false)]
+        [Authorize]
+        public ActionResult MySoftwareSubmissionsPartial(AccountViewModel m)
+        {
+            if (m == null)
+                m = new AccountViewModel();
+            if (!m.PageSize.HasValue || m.PageSize > 20)
+                m.PageSize = 20;
+            if (!m.Offset.HasValue || m.Offset < 1)
+                m.Offset = 1;
+            if (m.Licenses == null)
+                m.SoftwareSubmissions = _transactions.GetSoftware(m.Offset, m.PageSize);
+            return View(m);
+
+        }
+
+        [Themed(Enabled = false)]
+        [Authorize]
+        public ActionResult MySoftwareSubmissionsPartialPager(AccountViewModel m)
+        {
+            return View(m);
+        }
+
+
 
         [Authorize]
         [HttpGet]
@@ -369,6 +447,29 @@ namespace EXPEDIT.Transactions.Controllers
             else
                 return new HttpStatusCodeResult(System.Net.HttpStatusCode.OK);
         }
+
+        [Themed(Enabled = false)]
+        public ActionResult CartMini()
+        {
+            dynamic packageDisplay = _services.New.CartMini(
+                    Order: _transactions.GetOrderCurrent()
+                );
+            return new ShapeResult(this, packageDisplay);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Themed(Enabled = false)]
+        public ActionResult UpdateCart()
+        {
+            if (_transactions.UpdateCart(Request.Params))
+                return new HttpStatusCodeResult(System.Net.HttpStatusCode.OK);
+            else
+                return new HttpStatusCodeResult(System.Net.HttpStatusCode.ExpectationFailed);
+        }
+
+
+
 
     }
 

@@ -135,31 +135,38 @@ namespace EXPEDIT.Transactions.Services.Payments
             //Customer customer = customers.FirstItem;
             Customer customer = gateway.Customer.Find(order.PaymentCustomerID);
             string PaymentMethodToken = customer.CreditCards[0].Token;
-            if (order.Products.Count() != 1 || order.Products.Where(f => string.IsNullOrWhiteSpace(f.PaymentProviderProductName)).Count() > 0)
+            if (order.Products.Where(f => string.IsNullOrWhiteSpace(f.PaymentProviderProductName)).Count() > 0)
                 throw new NotSupportedException("Only Subscription Products and Services Supported"); //TODO: Support once offs
+            order.PaymentPaid = 0;
+            order.PaymentReference = "";
+            order.PaymentResponse = "";
             foreach (var p in order.Products)
             {                
                 //TODO Support non-subscriptions
                 var SubscriptionRequest = new SubscriptionRequest
                 {
                     PaymentMethodToken = PaymentMethodToken,
-                    PlanId = p.PaymentProviderProductName
+                    PlanId = p.PaymentProviderProductName,
+                    HasTrialPeriod = false,
+                    Price = p.Subtotal                                
                 };
                 Result<Subscription> result = gateway.Subscription.Create(SubscriptionRequest);
 
                 if (result.IsSuccess())
-                {
+                {                    
                     order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Subscribed | (uint)PaymentUtils.PaymentStatus.Success;
-                    order.PaymentResponse = result.Target.Status.ToString();
-                    order.PaymentPaid = result.Target.Price;
-                    order.PaymentReference = result.Target.Id;
+                    order.PaymentResponse +=  string.Format("::{0}", result.Target.Status.ToString());
+                    order.PaymentPaid += result.Target.Price;
+                    order.PaymentReference += string.Format("::{0}", result.Target.Id);
+                    order.PaymentResponseShort += string.Format("::{0}", result.Message);
                     p.Paid = true;
                 }
                 else
                 {
                     order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Error;
                     order.PaymentError = (uint)PaymentUtils.PaymentError.BadPayment;
-                    order.PaymentResponse = string.Join(", ", result.Errors.DeepAll());
+                    order.PaymentResponse = string.Format("{0},{1}::{2}", result.Message, string.Join(", ", result.Errors.DeepAll(), order.PaymentResponse));
+                    order.PaymentResponseShort = result.Message;
                     break;
                 }
             }

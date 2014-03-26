@@ -1,6 +1,87 @@
-﻿<h4>My Cart</h4>
-<p style="display:none;">Model.Order.OrderID</p>
-@foreach (var p in Model.Order.Products)
+﻿
+@{string formID = "form" + Guid.NewGuid().ToString();}
+<div id="myMiniCart@(formID)">
+@using (Html.BeginForm("UpdateCart", "User", new { area = "EXPEDIT.Transactions" }, FormMethod.Post, new { id = formID, @class = "form" }))
 {
-    <p>@(string.Format("{0:f2}x {1} @ {2}{3:f2}{4}", p.ModelUnits, p.ModelName, p.CurrencyPrefix, p.Subtotal, p.CurrencyPostfix))</p>
+    bool checkoutPage = Request.RawUrl.ToLowerInvariant().Contains("confirm");
+@Html.AntiForgeryToken()
+<p style="display:none;">Model.Order.OrderID</p>
+foreach (var p in Model.Order.Products)
+{
+    var taxInc = (p.Tax > 0) ?  " (inc. GST)" : "";
+    if (checkoutPage) {
+        <p>@Html.Raw(string.Format("{0:f2}x {1} <br/>@ {2}{3:f2}{4}{5}", p.ModelUnits, p.ModelName, p.CurrencyPrefix, p.Subtotal, p.CurrencyPostfix, taxInc))</p>
+    }
+    else {
+        <input type="number" id="@p.ModelID" name="@p.ModelID" min="0" max="40" step="1" value="@string.Format("{0:0}", p.ModelUnits)" />
+        <p>@Html.Raw(string.Format("{0} <br/>@ {1}{2:f2}{3}{4}", p.ModelName, p.CurrencyPrefix, p.Subtotal, p.CurrencyPostfix, taxInc))</p>
+    }
 }
+    <p>@if (!checkoutPage) {
+           @:<a href="@Url.Action("Confirm", "User", new { area = "EXPEDIT.Transactions", id=Model.Order.OrderID } )">Checkout</a>&nbsp;|&nbsp;<a href="javascript:$('#@formID').submit();">Update</a>
+        }
+        else {@:<a href="@Url.Action("Index", "User", new { area = "EXPEDIT.Transactions"} )">Continue Shopping</a>
+        }</p>    
+}
+</div>
+
+
+<script type="text/javascript">
+    var request;
+    $(document).ready(function () {
+        $("#@formID").submit(function (e) {
+            // prevent default posting of form
+            e.preventDefault();
+            e.returnValue = false;
+        }).validate({
+            rules: {
+                @foreach (var p in Model.Order.Products) {                
+                    @:"@p.ModelID": { required: true, positiveNumber: true },
+                }
+            },
+            submitHandler: function (form) {
+                // abort any pending request
+                if (request) {
+                    request.abort();
+                }
+                // setup some local variables
+                var $form = $("#@formID");
+                // let's select and cache all the fields
+                var $inputs = $form.find("input, select, button, textarea, hidden");
+                // serialize the data in the form
+                var serializedData = $form.serialize();
+
+                // let's disable the inputs for the duration of the ajax request
+                $inputs.prop("disabled", true);
+
+                // fire off the request to /form.php
+                request = $.ajax({
+                    url: '@Url.Action("UpdateCart", "User", new { area = "EXPEDIT.Transactions" } )',
+                    type: "post",
+                    data: serializedData
+                });
+
+                // callback handler that will be called on success
+                request.done(function (response, textStatus, jqXHR) {
+                    // log a message to the console
+                    alertify.success("Your details have been updated.");
+                    $('#myMiniCart@(formID)').load('@Url.Action("CartMini", "User", new { area = "EXPEDIT.Transactions" } )');
+                });
+
+                // callback handler that will be called on failure
+                request.fail(function (jqXHR, textStatus, errorThrown) {
+                    // log the error to the console
+                    alertify.error("Please check your inputs and try again.");
+                    //alertify.error("The following error occured: " + textStatus, errorThrown);                    
+                });
+
+                // callback handler that will be called regardless
+                // if the request failed or succeeded
+                request.always(function () {
+                    // reenable the inputs
+                    $inputs.prop("disabled", false);
+                });
+            }
+        });
+    });
+</script>

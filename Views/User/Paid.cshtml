@@ -1,7 +1,11 @@
 ﻿@model EXPEDIT.Transactions.ViewModels.OrderViewModel
 <script type="text/javascript">$('#affiliateLinkedIn').css('display', 'none');</script>
 <h2>Download Details:</h2>
-<a class="btn btn-small" href="/store/user/getorderinvoice/@Model.OrderID"><i class="glyphicon icon-download-alt"></i>&nbsp;Download Invoice</a>
+<div class="well" style="max-width:400px; margin: 0 auto 10px;"><ul class="nav nav-pills nav-stacked" style="max-width: 400px;">
+        <li><a class="btn btn-block" href="/store/user/getorderinvoice/@Model.OrderID"><i class="glyphicon icon-download-alt"></i>&nbsp;Download Invoice</a></li>
     @foreach (var m in Model.Downloads) {
-        <a class="btn btn-small" href="/share/download/@m.DownloadID"><i class="glyphicon icon-download-alt"></i>&nbsp;Download @m.Description</a>
+        <li><a class="btn btn-block" href="/share/download/@m.DownloadID"><i class="glyphicon icon-download-alt"></i>&nbsp;Download @m.Description</a></li>
     }
+</ul></div>
+
+

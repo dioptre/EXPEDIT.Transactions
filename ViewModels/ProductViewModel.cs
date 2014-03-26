@@ -25,12 +25,18 @@ namespace EXPEDIT.Transactions.ViewModels
         public decimal? RatingScale { get; set; }
         public string HTML { get; set; }
         public string Thumbnail { get { return string.Format(@"{0}/Companies/{1}.png", MediaDirectory, CompanyID); } }
-        public decimal? PricePerUnit { get; set; }
+        public decimal? PricePerModelUnit { get; set; }
+        public decimal? PricePerLabourUnit { get; set; }
+        public decimal? PricePerPartUnit { get; set; }
         public Guid? CurrencyID { get; set; }
         public string CurrencyPrefix { get; set; }
         public string CurrencyPostfix { get; set; }
-        public Guid? PriceUnitID { get; set; }
-        public string CostUnit { get; set; }        
+        public Guid? PriceModelUnitID { get; set; }
+        public Guid? PricePartUnitID { get; set; }
+        public Guid? PriceLabourUnitID { get; set; }
+        public string CostLabourUnit { get; set; }
+        public string CostPartUnit { get; set; }
+        public string CostModelUnit { get; set; }        
         public Guid? FreeDownloadID { get; set; }
         public DateTime LastUpdated { get; set; }
         public int? Downloads { get; set; }
@@ -49,11 +55,20 @@ namespace EXPEDIT.Transactions.ViewModels
         public decimal? UnitDefault { get; set; }
         public decimal? UnitMaximum { get; set; }
         public decimal? UnitMinimum { get; set; }
-        
+        public decimal? Subtotal { get; set; }
+        public string ModelName { get; set; }
+        [DisplayName("Labour Units:")]
+        public decimal? LabourUnits { get; set; }
+        [DisplayName("Part Units:")]
+        public decimal? PartUnits { get; set; }
+        [DisplayName("Model Units:")]
+        public decimal? ModelUnits { get; set; }
+        public decimal? Tax { get; set; }
+
         public IEnumerable<ContractConditionViewModel> ContractConditions { get; set; }
 
         [JsonIgnore]
-        [DisplayName("Terms:")]
+        [DisplayName("Product Terms:")]
         public string ProductTerms
         {
             

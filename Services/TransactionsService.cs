@@ -37,6 +37,8 @@ using Orchard.Environment.Configuration;
 using lh = CNX.Shared.Helpers;
 using Orchard.Users.Models;
 using Orchard.Roles.Models;
+using System.Collections.Specialized;
+
 
 namespace EXPEDIT.Transactions.Services {
     
@@ -156,6 +158,58 @@ namespace EXPEDIT.Transactions.Services {
 
         }
 
+        public Guid? GetOrderCurrentID()
+        {
+            Guid id = default(Guid);
+            var cookie = System.Web.HttpContext.Current.Request.Cookies["OrderID"];
+            if (cookie != null)
+            {
+                Guid.TryParse(cookie.Value, out id);
+            }
+            if (id == default(Guid))
+            {
+                //Guid id = System.Web.HttpContext.Current.Request;
+                var ii = System.Web.HttpContext.Current.Request.Url.Query.IndexOf("id=");
+                if (ii > -1)
+                {
+                    ii += 3;
+                    var ids = string.Join("", System.Web.HttpContext.Current.Request.Url.Query.Skip(ii).Take(36));
+                    Guid.TryParse(ids, out id);
+                }
+                else
+                {
+                    ii = System.Web.HttpContext.Current.Request.Url.AbsoluteUri.Length - 36;
+                    if (ii > -1)
+                    {
+                        var ids = string.Join("", System.Web.HttpContext.Current.Request.Url.AbsoluteUri.Skip(ii).Take(36));
+                        Guid.TryParse(ids, out id);
+                    }
+                }
+                using (new TransactionScope(TransactionScopeOption.Suppress))
+                {
+                    var d = new NKDC(_users.ApplicationConnectionString, null);
+                    if ((from o in d.Supplies where o.Version == 0 && o.VersionDeletedBy == null && o.CustomerPurchaseOrderID == id select o.CustomerPurchaseOrderID).Any())
+                        return id;                    
+                }
+            } 
+            else
+            {
+                return id;
+            }
+            return null;
+        }
+
+        public OrderViewModel GetOrderCurrent()
+        {
+            //Try Get Cookie or Last Order
+            OrderViewModel order = null;
+            Guid? orderID = GetOrderCurrentID();
+            if (orderID.HasValue)
+                order = GetOrder(orderID.Value, true);
+            else
+                order = GetOrderLast(true);
+            return order;
+        }
 
         public OrderViewModel GetOrderLast(bool detailed=false)
         {
@@ -163,7 +217,7 @@ namespace EXPEDIT.Transactions.Services {
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new NKDC(_users.ApplicationConnectionString, null);
-                var id = (from o in d.Supplies where o.Version == 0 && o.VersionDeletedBy == null orderby o.DateOrdered descending select o.CustomerPurchaseOrderID).FirstOrDefault();
+                var id = (from o in d.Supplies where o.Version == 0 && o.VersionDeletedBy == null && o.IsPaid != true orderby o.DateOrdered descending select o.CustomerPurchaseOrderID).FirstOrDefault();
                 if (id.HasValue)
                     return GetOrder(id.Value, detailed);
                 else
@@ -185,7 +239,8 @@ namespace EXPEDIT.Transactions.Services {
                                  ModelID=o.ModelID, 
                                  PartID=o.PartID, 
                                  PaymentProviderProductID = o.ApplicationPaymentProviderProductID,
-                                 PaymentProviderProductName= (o.ApplicationPaymentProviderProduct==null) ? null : o.ApplicationPaymentProviderProduct.PaymentProviderProductName 
+                                 PaymentProviderProductName= (o.ApplicationPaymentProviderProduct==null) ? null : o.ApplicationPaymentProviderProduct.PaymentProviderProductName,
+                                 Subtotal = o.Subtotal
                              });
                 else
                     items = (from o in d.SupplyItemDetailViews
@@ -203,9 +258,10 @@ namespace EXPEDIT.Transactions.Services {
                                  Subtotal = o.Subtotal,
                                  ModelName = o.StandardModelName,
                                  CurrencyPostfix = o.PostfixCharacters,
-                                 CurrencyPrefix = o.PrefixCharacters
+                                 CurrencyPrefix = o.PrefixCharacters,
+                                 Tax = o.Tax
                              });
-                var m = new OrderViewModel { OrderID = orderID, Products = items.ToList() };
+                var m = new OrderViewModel { OrderID = orderID, Products = items.ToList() };                
                 return m;
             }
         }
@@ -526,91 +582,97 @@ namespace EXPEDIT.Transactions.Services {
                                     Subtotal = (supplyItem.SubtotalModel ?? 0m) //TODO: Discounts
                                 };
                                 i.InvoiceLine.Add(lineItem);
+                                var qtyLicenses = 1;
+                                if (supplyItem.QuantityModel < 500)
+                                    qtyLicenses = Convert.ToInt32(supplyItem.QuantityModel.Value);
+                                for (int j = 0; j < qtyLicenses; j++)
+                                {
+                                    //Asset TODO:Check to update old asset
+                                    var assetID = Guid.NewGuid();
+                                    var asset = new Asset
+                                    {
+                                        AssetID = assetID,
+                                        AssetName = string.Format("{0} [{1}]", string.Join(null, mn.Take(60 - 42)), assetID),
+                                        InitialCost = lineItem.Subtotal,
+                                        ProRataCost = supplyItem.CostPerUnitModel + supplyItem.TaxModel,
+                                        ProRataUnitID = supplyItem.ModelUnitID,
+                                        Purchased = now,
+                                        PurchaseOrderID = order.OrderID,
+                                        ModelID = supplyItem.ModelID,
+                                        CurrentContactID = contact
+                                    };
+                                    d.Assets.AddObject(asset);
+                                    DateTime? nextMaintenance = default(DateTime?);
+                                    if (mu != null)
+                                    {
+                                        if (mu.UnitID == ConstantsHelper.UNIT_SI_SECONDS)
+                                            nextMaintenance = now.AddSeconds(Convert.ToDouble(supplyItem.QuantityModel.Value));
+                                        else if (mu.EquivalentUnitID == ConstantsHelper.UNIT_SI_SECONDS)
+                                            nextMaintenance = now.AddSeconds(Convert.ToDouble(supplyItem.QuantityModel.Value * mu.EquivalentMultiplier));
+                                        else
+                                            warnings.Add(string.Format("Product unit description not time based. Could not update maintenance schedule. Order: ({0}) Asset: ({1})", order.OrderID, asset.AssetID));
+                                    }
+                                    var assetMaintenance = new AssetMaintenance
+                                    {
+                                        AssetMaintenanceID = Guid.NewGuid(),
+                                        AssetID = asset.AssetID,
+                                        NextDueDateBilling = nextMaintenance
+                                    };
+                                    asset.AssetMaintenance.Add(assetMaintenance);
+                                    var license = new License
+                                    {
+                                        LicenseID = Guid.NewGuid(),
+                                        LicenseeGUID = contact,
+                                        ContactID = contact,
+                                        ValidForUnitID = supplyItem.ModelUnitID,
+                                        ValidForDuration = supplyItem.QuantityModel,
+                                        ValidFrom = now,
+                                        Expiry = nextMaintenance,
+                                        SupportExpiry = nextMaintenance,
+                                        ApplicationID = application,
+                                        ServiceAuthorisationMethod = ConstantsHelper.LICENSE_SERVER_AUTH_METHOD
+                                    };
+                                    d.Licenses.AddObject(license);
+                                    var licenseAsset = new LicenseAsset
+                                    {
+                                        LicenseAssetID = Guid.NewGuid(),
+                                        LicenseID = license.LicenseID,
+                                        AssetID = asset.AssetID,
+                                        ModelID = supplyItem.ModelID
+                                    };
+                                    d.LicenseAssets.AddObject(licenseAsset);
 
-                                //Asset TODO:Check to update old asset
-                                var assetID = Guid.NewGuid();
-                                var asset = new Asset
-                                {
-                                    AssetID = assetID,
-                                    AssetName = string.Format("{0} [{1}]", string.Join(null, mn.Take(60 - 42)), assetID),
-                                    InitialCost = lineItem.Subtotal,
-                                    ProRataCost = supplyItem.CostPerUnitModel + supplyItem.TaxModel,
-                                    ProRataUnitID = supplyItem.ModelUnitID,
-                                    Purchased = now,
-                                    PurchaseOrderID = order.OrderID,
-                                    ModelID = supplyItem.ModelID,
-                                    CurrentContactID = contact
-                                };
-                                d.Assets.AddObject(asset);
-                                DateTime? nextMaintenance = default(DateTime?);
-                                if (mu != null)
-                                {
-                                    if (mu.UnitID == ConstantsHelper.UNIT_SI_SECONDS)
-                                        nextMaintenance = now.AddSeconds(Convert.ToDouble(supplyItem.QuantityModel.Value));
-                                    else if (mu.EquivalentUnitID == ConstantsHelper.UNIT_SI_SECONDS)
-                                        nextMaintenance = now.AddSeconds(Convert.ToDouble(supplyItem.QuantityModel.Value * mu.EquivalentMultiplier));
-                                    else
-                                        warnings.Add(string.Format("Product unit description not time based. Could not update maintenance schedule. Order: ({0}) Asset: ({1})", order.OrderID, asset.AssetID));
-                                }
-                                var assetMaintenance = new AssetMaintenance
-                                {
-                                    AssetMaintenanceID = Guid.NewGuid(),
-                                    AssetID = asset.AssetID,
-                                    NextDueDateBilling = nextMaintenance
-                                };
-                                asset.AssetMaintenance.Add(assetMaintenance);
-                                var license = new License
-                                {
-                                    LicenseID = Guid.NewGuid(),
-                                    LicenseeGUID = contact,
-                                    ContactID = contact,
-                                    ValidForUnitID = supplyItem.ModelUnitID,
-                                    ValidForDuration = supplyItem.QuantityModel,
-                                    ValidFrom = now,
-                                    Expiry = nextMaintenance,
-                                    SupportExpiry = nextMaintenance,
-                                    ApplicationID = application,
-                                    ServiceAuthorisationMethod = ConstantsHelper.LICENSE_SERVER_AUTH_METHOD
-                                };
-                                d.Licenses.AddObject(license);
-                                var licenseAsset = new LicenseAsset
-                                {
-                                    LicenseAssetID = Guid.NewGuid(),
-                                    LicenseID = license.LicenseID,
-                                    AssetID = asset.AssetID,
-                                    ModelID = supplyItem.ModelID
-                                };
-                                d.LicenseAssets.AddObject(licenseAsset);
 
-                                var m = (from o in d.DictionaryModels where o.ModelID==supplyItem.ModelID select o).FirstOrDefault();
-                                if (m != null)
-                                {
-                                    if (m.UserGuideFileDataID.HasValue)
-                                        d.Downloads.AddObject(new Download
-                                        {
-                                            DownloadID = Guid.NewGuid(),
-                                            FileAllocated = now,
-                                            FilterContactID = contact,
-                                            RemainingDownloads = ConstantsHelper.DOWNLOADS_REMAINING_DEFAULT,
-                                            FileDataID = m.UserGuideFileDataID.Value,
-                                            LicenseID = license.LicenseID,
-                                            LicenseAssetID = licenseAsset.LicenseAssetID,
-                                            ValidFrom = now,
-                                            ValidUntil = nextMaintenance
-                                        });
-                                    if (m.SecureFileDataID.HasValue)
-                                        d.Downloads.AddObject(new Download
-                                        {
-                                            DownloadID = Guid.NewGuid(),
-                                            FileAllocated = now,
-                                            FilterContactID = contact,
-                                            RemainingDownloads = ConstantsHelper.DOWNLOADS_REMAINING_DEFAULT,
-                                            FileDataID = m.SecureFileDataID.Value,
-                                            LicenseID = license.LicenseID,
-                                            LicenseAssetID = licenseAsset.LicenseAssetID,
-                                            ValidFrom = now,
-                                            ValidUntil = nextMaintenance
-                                        });
+                                    var m = (from o in d.DictionaryModels where o.ModelID == supplyItem.ModelID select o).FirstOrDefault();
+                                    if (m != null)
+                                    {
+                                        if (m.UserGuideFileDataID.HasValue)
+                                            d.Downloads.AddObject(new Download
+                                            {
+                                                DownloadID = Guid.NewGuid(),                                                
+                                                FileAllocated = now,
+                                                FilterContactID = contact,
+                                                RemainingDownloads = ConstantsHelper.DOWNLOADS_REMAINING_DEFAULT,
+                                                FileDataID = m.UserGuideFileDataID.Value,
+                                                LicenseID = license.LicenseID,
+                                                LicenseAssetID = licenseAsset.LicenseAssetID,
+                                                ValidFrom = now,
+                                                ValidUntil = nextMaintenance
+                                            });
+                                        if (m.SecureFileDataID.HasValue)
+                                            d.Downloads.AddObject(new Download
+                                            {
+                                                DownloadID = Guid.NewGuid(),
+                                                FileAllocated = now,
+                                                FilterContactID = contact,
+                                                RemainingDownloads = ConstantsHelper.DOWNLOADS_REMAINING_DEFAULT,
+                                                FileDataID = m.SecureFileDataID.Value,
+                                                LicenseID = license.LicenseID,
+                                                LicenseAssetID = licenseAsset.LicenseAssetID,
+                                                ValidFrom = now,
+                                                ValidUntil = nextMaintenance
+                                            });
+                                    }
                                 }
 
                             }
@@ -726,7 +788,8 @@ namespace EXPEDIT.Transactions.Services {
                 var currentConditions = new List<ContractConditionViewModel>();
                 foreach (var p in order.Products)
                 {
-                    currentConditions.AddRange(p.ContractConditions);
+                    if (p != null && p.ContractConditions != null)
+                        currentConditions.AddRange(p.ContractConditions);
 
                     //SupplierModel, Model, Part, Count
                     var item = (from o in oldItems 
@@ -750,34 +813,38 @@ namespace EXPEDIT.Transactions.Services {
                         };
                         d.SupplyItems.AddObject(item);
                     }
-                    item.CurrencyID = p.CurrencyID;
+                    if (!item.CurrencyID.HasValue)
+                        item.CurrencyID = p.CurrencyID;
 
                     if (p.PartID.HasValue || p.SupplierPartID.HasValue)
                     {
-                        throw new NotImplementedException();
+                        throw new NotImplementedException(); //Todo, add parts and labour
                         item.PartUnitID = p.ProductUnitID;
-                        item.CostPerUnitPart = p.PricePerUnit;
-                        item.QuantityPart = p.Units;
+                        item.CostPerUnitPart = p.PricePerPartUnit;
+                        item.QuantityPart = p.PartUnits;
                         item.CostPart = item.CostPerUnitPart * item.QuantityPart;
                         item.TaxPart = item.CostPart * ConstantsHelper.TAX_DEFAULT;
                         item.SubtotalPart = item.CostPart + item.TaxPart;
                     }
                     else
-                    {
-                        item.ModelUnitID = p.ProductUnitID;
-                        item.CostPerUnitModel = p.PricePerUnit;
-                        item.QuantityModel = p.Units;
+                    {    
+                        item.QuantityModel = p.ModelUnits;
+                        if (!item.ModelUnitID.HasValue)
+                            item.ModelUnitID = p.ProductUnitID;
+                        if (!item.CostPerUnitModel.HasValue)
+                            item.CostPerUnitModel = p.PricePerModelUnit;
                         item.CostModel = item.CostPerUnitModel * item.QuantityModel;
                         item.TaxModel = item.CostModel * ConstantsHelper.TAX_DEFAULT;
                         item.SubtotalModel = item.CostModel + item.TaxModel;
                     }
 
+                    //Not Implemented
                     item.LabourUnitID = null;
-                    item.CostPerUnitLabour = 0;
-                    item.QuantityLabour = 0;
-                    item.CostLabour = 0;
-                    item.TaxLabour = 0;
-                    item.SubtotalLabour = 0;
+                    item.CostPerUnitLabour = null;
+                    item.QuantityLabour = null;
+                    item.CostLabour = null;
+                    item.TaxLabour = null;
+                    item.SubtotalLabour = null;
                     
                     item.Tax = (item.TaxLabour ?? 0m) + (item.TaxModel ?? 0m) + (item.TaxPart ?? 0m); //TODO: If taxation gets complicated use itemtax table
                     item.OriginalSubtotal = (item.CostLabour ?? 0m) + (item.CostModel ?? 0m) + (item.CostPart ?? 0m);
@@ -787,21 +854,21 @@ namespace EXPEDIT.Transactions.Services {
                 //Clear removed items
                 foreach (var oldItem in oldItems)
                 {
-                    oldItem.CostLabour = 0;
-                    oldItem.CostModel = 0;
-                    oldItem.CostPart = 0;
-                    oldItem.QuantityLabour = 0;
-                    oldItem.QuantityModel = 0;
-                    oldItem.QuantityPart = 0;
-                    oldItem.Subtotal = 0;
-                    oldItem.SubtotalLabour = 0;
-                    oldItem.SubtotalModel = 0;
-                    oldItem.SubtotalPart = 0;
-                    oldItem.Tax = 0; //TODO: If taxation gets complicated use itemtax table
-                    oldItem.TaxLabour = 0;
-                    oldItem.TaxModel = 0;
-                    oldItem.TaxPart = 0;
-                    oldItem.OriginalSubtotal = 0;
+                    oldItem.CostLabour = null;
+                    oldItem.CostModel = null;
+                    oldItem.CostPart = null;
+                    oldItem.QuantityLabour = null;
+                    oldItem.QuantityModel = null;
+                    oldItem.QuantityPart = null;
+                    oldItem.Subtotal = null;
+                    oldItem.SubtotalLabour = null;
+                    oldItem.SubtotalModel = null;
+                    oldItem.SubtotalPart = null;
+                    oldItem.Tax = null; //TODO: If taxation gets complicated use itemtax table
+                    oldItem.TaxLabour = null;
+                    oldItem.TaxModel = null;
+                    oldItem.TaxPart = null;
+                    oldItem.OriginalSubtotal = null;
                 }
                 
                 //ContractConditions
@@ -863,9 +930,9 @@ namespace EXPEDIT.Transactions.Services {
                             ModelID = o.ModelID, 
                             CompanyID = o.CompanyID, 
                             MediaDirectory = directory, 
-                            PricePerUnit = o.PricePerUnit, 
-                            PriceUnitID = o.PriceUnitID,
-                            CostUnit = o.CostUnit,
+                            PricePerModelUnit = o.PricePerUnit, //Todo Add Parts & Labour
+                            PriceModelUnitID = o.PriceUnitID,
+                            CostModelUnit = o.CostUnit,
                             SupplierID = o.SupplierID,
                             Title = o.Title,
                             Subtitle = o.Subtitle,
@@ -923,6 +990,16 @@ namespace EXPEDIT.Transactions.Services {
                          }).ToArray();
             }
             
+        }
+
+        public bool CheckContractConditions(Guid orderID)
+        {
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new NKDC(_users.ApplicationConnectionString, null);
+                return !d.SupplyContractConditions.Any(f=> f.Supply.CustomerPurchaseOrderID == orderID && f.Agreed == null);
+            }
+
         }
 
         public void IncrementDownloadCounter(Guid productID)
@@ -1149,7 +1226,8 @@ namespace EXPEDIT.Transactions.Services {
                     {
                         MetaDataID = m.SoftwareSubmissionID,
                         MetaDataType = ConstantsHelper.DOCUMENT_TYPE_SOFTWARE_SUBMISSION,
-                        VersionOwnerContactID = contact
+                        VersionOwnerContactID = contact,
+                        VersionUpdated = DateTime.UtcNow
                     };
                     d.MetaDatas.AddObject(s);
                 }
@@ -1377,6 +1455,42 @@ namespace EXPEDIT.Transactions.Services {
             }
         }
 
+        public IEnumerable<SoftwareSubmissionViewModel> GetSoftware(int? startRowIndex = null, int? pageSize = null)
+        {
+             var contact = _users.ContactID;
+            var application = _users.ApplicationID;
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new NKDC(_users.ApplicationConnectionString, null);
+                var r = (from o in d.E_SP_GetSoftwareSubmissions(application, contact, null, startRowIndex, pageSize)
+                         select o).ToArray();
+                var m = new List<SoftwareSubmissionViewModel>();
+                foreach (var o in r)
+                {
+                    dynamic md = JsonConvert.DeserializeObject<NullableExpandoObject>(o.ContentToIndex);
+                    SoftwareSubmissionViewModel s = m.LastOrDefault();
+                    if (s == null || s.SoftwareSubmissionID != o.MetaDataID)
+                    {
+                        s = new SoftwareSubmissionViewModel
+                        {
+                            Description = md.Description,
+                            Uploaded = o.VersionUpdated,
+                            SoftwareSubmissionID = o.MetaDataID,
+                            RowNumber = o.Row,
+                            ForDevelopment = md.ForDevelopment,
+                            ForManagement = md.ForManagement,
+                            ForSale = md.ForSale,
+                            ShareFiles = new Dictionary<Guid, string>()
+                        };
+                        m.Add(s);
+                        if (o.FileDataID.HasValue && !s.ShareFiles.Any(f => f.Key == o.FileDataID))
+                            s.ShareFiles.Add(o.FileDataID.Value, o.FileName);
+                    }
+                }
+                return m;
+            }            
+        }
+
         public IEnumerable<LicenseViewModel> GetLicenses(int? startRowIndex = null, int? pageSize = null)
         {
 
@@ -1537,6 +1651,33 @@ namespace EXPEDIT.Transactions.Services {
                 }
                 return c;
             }
+        }
+
+        public bool UpdateCart(NameValueCollection m)
+        {
+            if (m == null)
+                return false;
+            Guid orderID;
+            if (!Guid.TryParse(m["OrderID"], out orderID))
+                return false;
+            var order = GetOrder(orderID);
+            foreach (var p in order.Products)
+            {
+                if (p.ModelID.HasValue && p.ModelID != default(Guid))
+                {
+                    var temp = m[p.ModelID.ToString()];
+                    if (!string.IsNullOrWhiteSpace(temp))
+                    {
+                        int mQtyNew;
+                        if (!int.TryParse(temp, out mQtyNew))
+                            return false;
+                        p.ModelUnits = mQtyNew;
+
+                    }
+                }
+            }
+            UpdateOrder(order);
+            return true;
         }
 
         public bool UpdateAccount(AccountViewModel m)
