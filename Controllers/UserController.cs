@@ -62,6 +62,15 @@ namespace EXPEDIT.Transactions.Controllers
             return new HttpNotFoundResult();
         }
 
+        [HttpPost]
+        [Authorize]
+        public ActionResult Buy(Guid orderID)
+        {
+            _transactions.ConfirmContractConditions(orderID);
+            return RedirectToAction("Confirm", new { id = orderID });
+        }
+
+        [HttpGet]
         [Authorize]
         public ActionResult Buy(string id, string @ref)
         {
@@ -101,8 +110,8 @@ namespace EXPEDIT.Transactions.Controllers
             }
             else
             {
-                var cc = _transactions.GetContractConditions(new Guid[] { supplierModelID, modelID });
-                var op = new OrderProductViewModel(newProduct) { ModelUnits = 1, ContractConditions = cc };
+                //var cc = _transactions.GetContractConditions(new Guid[] { supplierModelID, modelID });
+                var op = new OrderProductViewModel(newProduct) { ModelUnits = 1 };
                 var allConditions = _transactions.GetContractConditions(oldModels.Union(new Guid[] { supplierModelID, modelID }).ToArray());
                 order = new OrderViewModel() {
                     OrderID = (order == null || !order.OrderID.HasValue) ? Guid.NewGuid() : order.OrderID, 
@@ -121,6 +130,14 @@ namespace EXPEDIT.Transactions.Controllers
             if (_transactions.GetOrderProcessed(orderID))
                 return RedirectToAction("Paid", new { area = "EXPEDIT.Transactions", controller = "User", id = id });
             var m = _transactions.GetOrder(orderID);
+            if (!_transactions.CheckContractConditions(orderID))
+            {
+                var p = m.Products.Where(f=>f.ModelID.HasValue && f.SupplierModelID.HasValue).FirstOrDefault();
+                if (p != null)
+                    return RedirectToAction("Buy", new { id = p.SupplierModelID, @ref = p.ModelID });
+                m.Products = null;
+                return View(m);
+            }
             _transactions.GetOrderOwner(ref m);
             _transactions.PreparePayment(ref m);      
             return View(m);

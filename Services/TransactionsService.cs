@@ -105,19 +105,11 @@ namespace EXPEDIT.Transactions.Services {
 
         public void PreparePayment(ref OrderViewModel order)
         {
-            //ContractConditions
             var contact = _users.ContactID;
             var orderID = order.OrderID;
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new NKDC(_users.ApplicationConnectionString, null);
-                var contracts = (from o in d.SupplyContractConditions where o.Supply.CustomerPurchaseOrderID == orderID && o.Version == 0 && o.VersionDeletedBy == null
-                             select o);
-                foreach (var c in contracts)
-                {
-                    c.AgreedByContactID = contact;
-                    c.Agreed = DateTime.UtcNow;
-                }
                 order.PaymentAntiForgeryKey = Guid.NewGuid();
                 var md = new MetaData { MetaDataID = order.PaymentAntiForgeryKey.Value, MetaDataType = ConstantsHelper.METADATA_ANTIFORGERY, ContentToIndex = string.Format("{0}", orderID) };
                 d.MetaDatas.AddObject(md);                        
@@ -785,12 +777,8 @@ namespace EXPEDIT.Transactions.Services {
                 }
                 //SupplyItem
                 var oldItems = (from o in d.SupplyItems where o.Supply.CustomerPurchaseOrderID == po.PurchaseOrderID select o).ToList();
-                var currentConditions = new List<ContractConditionViewModel>();
                 foreach (var p in order.Products)
                 {
-                    if (p != null && p.ContractConditions != null)
-                        currentConditions.AddRange(p.ContractConditions);
-
                     //SupplierModel, Model, Part, Count
                     var item = (from o in oldItems 
                                 where 
@@ -799,6 +787,8 @@ namespace EXPEDIT.Transactions.Services {
                                     && o.ModelID == p.ModelID
                                     && o.PartID == p.PartID
                                 select o).SingleOrDefault();
+                    if (!p.ModelUnits.HasValue || p.ModelUnits.Value <= 0) //Remove the zeroed item
+                        continue;
                     if (item != null)
                         oldItems.Remove(item);
                     else {
@@ -854,44 +844,46 @@ namespace EXPEDIT.Transactions.Services {
                 //Clear removed items
                 foreach (var oldItem in oldItems)
                 {
-                    oldItem.CostLabour = null;
-                    oldItem.CostModel = null;
-                    oldItem.CostPart = null;
-                    oldItem.QuantityLabour = null;
-                    oldItem.QuantityModel = null;
-                    oldItem.QuantityPart = null;
-                    oldItem.Subtotal = null;
-                    oldItem.SubtotalLabour = null;
-                    oldItem.SubtotalModel = null;
-                    oldItem.SubtotalPart = null;
-                    oldItem.Tax = null; //TODO: If taxation gets complicated use itemtax table
-                    oldItem.TaxLabour = null;
-                    oldItem.TaxModel = null;
-                    oldItem.TaxPart = null;
-                    oldItem.OriginalSubtotal = null;
+                    d.SupplyItems.DeleteObject(oldItem);
+                    //oldItem.CostLabour = null;
+                    //oldItem.CostModel = null;
+                    //oldItem.CostPart = null;
+                    //oldItem.QuantityLabour = null;
+                    //oldItem.QuantityModel = null;
+                    //oldItem.QuantityPart = null;
+                    //oldItem.Subtotal = null;
+                    //oldItem.SubtotalLabour = null;
+                    //oldItem.SubtotalModel = null;
+                    //oldItem.SubtotalPart = null;
+                    //oldItem.Tax = null; //TODO: If taxation gets complicated use itemtax table
+                    //oldItem.TaxLabour = null;
+                    //oldItem.TaxModel = null;
+                    //oldItem.TaxPart = null;
+                    //oldItem.OriginalSubtotal = null;
                 }
                 
-                //ContractConditions
-                var oldConditions = (from o in d.SupplyContractConditions where o.SupplyID == s.SupplyID select o).ToList();
-                currentConditions = currentConditions.Where(f=>f.ContractID.HasValue).GroupBy(f => string.Format("{0}{1}", f.ContractID, f.ContractConditionID), (key, list) => list.First()).ToList();
-                foreach (var c in currentConditions)
-                {
-                    //SupplierModel, Model, Part, Count
-                    var item = (from o in oldConditions
-                                where
-                                    o.ContractID == c.ContractID
-                                    && o.ContractConditionID == c.ContractConditionID
-                                select o).SingleOrDefault();
-                    if (item != null)
-                        oldConditions.Remove(item);
-                    else
-                    {
-                        item = new SupplyContractCondition { SupplyContractConditionID = Guid.NewGuid(), SupplyID = s.SupplyID, ContractID = c.ContractID.Value, ContractConditionID = c.ContractConditionID };
-                        d.SupplyContractConditions.AddObject(item);
-                    }
-                    foreach (var oldCondition in oldConditions)
-                        d.SupplyContractConditions.DeleteObject(oldCondition);
-                }
+
+                //d.SupplyContractConditions.Delete(f=>f.Agreed == null && f.SupplyID==s.SupplyID);
+                
+
+
+                var requiredConditions = GetContractConditions(order.Products.Where(f=>f.ModelID.HasValue).Select(f=>f.ModelID.Value).Union(order.Products.Where(f=>f.SupplierModelID.HasValue).Select(f=>f.SupplierModelID.Value)).ToArray())
+                    .GroupBy(f=>string.Format("{0}{1}", f.ContractID, f.ContractConditionID));                
+                var currentConditions = (from o in d.SupplyContractConditions where o.Version==0 && o.VersionDeletedBy == null && o.SupplyID == s.SupplyID select o)
+                    .AsEnumerable()
+                    .GroupBy(f => string.Format("{0}{1}", f.ContractID, f.ContractConditionID));
+                foreach (var delete in currentConditions.Where(f=> !requiredConditions.Any(g=>g.Key == f.Key)).Select(f=>f.AsEnumerable()))
+                    foreach (var dc in delete)
+                        d.SupplyContractConditions.DeleteObject(dc);
+                foreach (var create in requiredConditions.Where(f=> !currentConditions.Any(g=>g.Key == f.Key)).Select(f=>f.AsEnumerable()))
+                    foreach (var cc in create)
+                        d.SupplyContractConditions.AddObject(
+                            new SupplyContractCondition { 
+                                SupplyContractConditionID = Guid.NewGuid(), 
+                                SupplyID = s.SupplyID, 
+                                ContractID = cc.ContractID.Value, 
+                                ContractConditionID = cc.ContractConditionID 
+                            });
 
                 d.SaveChanges();
 
@@ -972,13 +964,13 @@ namespace EXPEDIT.Transactions.Services {
             return GetProducts(null, supplierModelID).First();
         }
 
-        public IEnumerable<ContractConditionViewModel> GetContractConditions(Guid[] referenceIDs)
+        public IEnumerable<ContractConditionViewModel> GetContractConditions(Guid[] referenceIDs, bool includeText=true)
         {
             var supplier = _users.ApplicationCompanyID;
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new NKDC(_users.ApplicationConnectionString, null);
-                return (from o in d.E_SP_GetProductContractConditions(string.Join(",", referenceIDs), supplier, false, true, false)
+                return (from o in d.E_SP_GetProductContractConditions(string.Join(",", referenceIDs), supplier, false, true, false, includeText)
                          select new ContractConditionViewModel
                          {
                              ContractID = o.ContractID,
@@ -990,6 +982,24 @@ namespace EXPEDIT.Transactions.Services {
                          }).ToArray();
             }
             
+        }
+
+        public void ConfirmContractConditions(Guid orderID)
+        {
+            var contact = _users.ContactID;
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new NKDC(_users.ApplicationConnectionString, null);
+                var contracts = (from o in d.SupplyContractConditions
+                                 where o.Supply.CustomerPurchaseOrderID == orderID && o.Version == 0 && o.VersionDeletedBy == null
+                                 select o);
+                foreach (var c in contracts)
+                {
+                    c.AgreedByContactID = contact;
+                    c.Agreed = DateTime.UtcNow;
+                }
+                d.SaveChanges();
+            }
         }
 
         public bool CheckContractConditions(Guid orderID)

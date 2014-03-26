@@ -7,7 +7,9 @@
     Layout.Title = T("Purchase").ToString();
 }
 <script type="text/javascript">$('#affiliateLinkedIn').css('display', 'none');</script>
-@*@using (Html.BeginFormAntiForgeryPost(Url.Action(string.Format("{0}", ViewData["TransparentRedirectUrl"]), "User", new { area = "EXPEDIT.Transactions", Controller = "User", Action = "Index" }), FormMethod.Post, new { id = "payment-form", @class = "payment-form" }))*@
+@using (Html.BeginForm("Buy", "User", new { area = "EXPEDIT.Transactions" }, FormMethod.Post, new { id = "form1", @class = "form" }))
+{
+@Html.AntiForgeryToken()
 <table class="table" style="border:none;">
 <thead>
 <tr><th width="75px"></th><th></th></tr>
@@ -26,9 +28,11 @@
         </td>
     </tr>
     <tr>
-        <td colspan="2"><p style="text-align:right;">@Html.Raw(string.Format("<button class=\"btn btn-info\" onclick=\"window.location.href='" + Url.Action("Confirm",new { area="EXPEDIT.Transactions", controller="User", id=Model.OrderID}) + "'\">Agree</button></p>"))</p></td>
+        <td colspan="2"><p style="text-align:right;"><button class="btn btn-info" onclick="javascript:$('#form1').submit()">Agree</button></p></td>
     </tr>        
 
 </tbody>
 </table>
 <p style="margin-top:20px;text-align:right;"><small>*Excluding local government taxes and charges. May be subject to GST.</small></p>
+@Html.HiddenFor(x => x.OrderID);
+}

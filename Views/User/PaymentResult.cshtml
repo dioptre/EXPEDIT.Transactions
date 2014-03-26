@@ -10,6 +10,8 @@
 <h1>Transaction @(paid ? "Completed" : "Failed")</h1>
 @if (paid) {
     @Html.Partial("Paid", Model)
+    <p>&nbsp;</p>
+    <h3 style="text-align:right;">Thank you.</h3>
 }
 else {
     <p>Payment Provider Returned Error: @Model.PaymentResponseShort</p>

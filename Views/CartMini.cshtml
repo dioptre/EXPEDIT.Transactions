@@ -8,6 +8,10 @@
 <p style="display:none;">Model.Order.OrderID</p>
 foreach (var p in Model.Order.Products)
 {
+    if (p.ModelUnits == null)
+    {
+        continue;
+    }
     var taxInc = (p.Tax > 0) ?  " (inc. GST)" : "";
     if (checkoutPage) {
         <p>@Html.Raw(string.Format("{0:f2}x {1} <br/>@ {2}{3:f2}{4}{5}", p.ModelUnits, p.ModelName, p.CurrencyPrefix, p.Subtotal, p.CurrencyPostfix, taxInc))</p>

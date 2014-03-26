@@ -86,10 +86,13 @@ namespace EXPEDIT.Transactions.Services
         void IncrementBuyCounter(Guid supplierModelID, Guid modelID);
 
         [OperationContract]
-        IEnumerable<ContractConditionViewModel> GetContractConditions(Guid[] referenceIDs);
+        IEnumerable<ContractConditionViewModel> GetContractConditions(Guid[] referenceIDs, bool includeText=true);
 
         [OperationContract]
         bool CheckContractConditions(Guid orderID);
+
+        [OperationContract]
+        void ConfirmContractConditions(Guid orderID);
 
         [OperationContract]
         bool SubmitSoftware(SoftwareSubmissionViewModel s);
