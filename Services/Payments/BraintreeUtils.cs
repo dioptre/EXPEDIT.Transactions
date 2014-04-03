@@ -14,8 +14,8 @@ namespace EXPEDIT.Transactions.Services.Payments
     public class BraintreeUtils : IPayment
     {
         private static BraintreeGateway gateway = null;
-        private IUsersService _users;
-        private IMerchant _merchant;
+        private IUsersService _users = null;
+        private IMerchant _merchant = null;
 
         public BraintreeUtils(IUsersService users, IOrchardServices orchardServices)
         {
@@ -41,7 +41,7 @@ namespace EXPEDIT.Transactions.Services.Payments
                 };
         }
 
-        Braintree.Environment EnvironmentObject {get;set;}
+        
 
         public void PreparePayment(ref OrderViewModel order)
         {
