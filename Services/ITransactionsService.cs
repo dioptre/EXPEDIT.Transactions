@@ -98,6 +98,9 @@ namespace EXPEDIT.Transactions.Services
         bool SubmitSoftware(SoftwareSubmissionViewModel s);
 
         [OperationContract]
+        bool SubmitProjectPledge(ProjectPledgeViewModel s);
+
+        [OperationContract]
         IEnumerable<InvoiceViewModel> GetInvoices(int? startRowIndex = null, int? pageSize = null);
 
         [OperationContract]

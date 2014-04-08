@@ -1301,6 +1301,92 @@ namespace EXPEDIT.Transactions.Services {
             return true;
         }
 
+
+        public bool SubmitProjectPledge(ProjectPledgeViewModel m)
+        {
+            //if (m.SoftwareSubmissionID == default(Guid))
+            //    return false;
+            //var contact = _users.ContactID;
+            //using (new TransactionScope(TransactionScopeOption.Suppress))
+            //{
+            //    var d = new NKDC(_users.ApplicationConnectionString, null);
+            //    //First check if any data is not owned by me
+            //    if ((from o in d.MetaDatas where o.MetaDataID == m.SoftwareSubmissionID && o.VersionOwnerContactID != contact.Value select o).Any())
+            //        return false;
+            //    if ((from o in d.FileDatas where o.ReferenceID == m.SoftwareSubmissionID && o.VersionOwnerContactID != contact.Value select o).Any())
+            //        return false;
+            //    var s = (from o in d.MetaDatas where o.MetaDataID == m.SoftwareSubmissionID && o.Version == 0 && o.VersionDeletedBy == null select o).SingleOrDefault();
+            //    if (s == null)
+            //    {
+            //        s = new MetaData
+            //        {
+            //            MetaDataID = m.SoftwareSubmissionID,
+            //            MetaDataType = ConstantsHelper.DOCUMENT_TYPE_SOFTWARE_SUBMISSION,
+            //            VersionOwnerContactID = contact,
+            //            VersionUpdated = DateTime.UtcNow
+            //        };
+            //        d.MetaDatas.AddObject(s);
+            //    }
+            //    if (s.VersionOwnerContactID != contact)
+            //        return false;
+            //    if (!string.IsNullOrWhiteSpace(m.Description) || m.ForDevelopment || m.ForManagement || m.ForSale)
+            //    {
+            //        var content = JsonConvert.SerializeObject(m);
+            //        if (content != s.ContentToIndex)
+            //            s.ContentToIndex = content;
+            //    }
+            //    d.SaveChanges();
+            //    var table = d.GetTableName<MetaData>();
+            //    if (m.Files != null)
+            //    {
+            //        var mediaPath = HostingEnvironment.IsHosted ? HostingEnvironment.MapPath("~/Media/") ?? "" : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Media");
+            //        var storagePath = Path.Combine(mediaPath, _settings.Name);
+            //        foreach (var f in m.Files)
+            //        {
+            //            var filename = string.Concat(f.Value.FileName.Reverse().Take(50).Reverse());
+
+            //            var file = new FileData
+            //            {
+            //                FileDataID = f.Key,
+            //                TableType = table,
+            //                ReferenceID = m.SoftwareSubmissionID,
+            //                FileTypeID = null, //TODO give type
+            //                FileName = filename,
+            //                FileLength = f.Value.ContentLength,
+            //                MimeType = f.Value.ContentType,
+            //                VersionOwnerContactID = contact,
+            //                DocumentType = ConstantsHelper.DOCUMENT_TYPE_SOFTWARE_SUBMISSION
+            //            };
+            //            m.FileLengths.Add(f.Key, f.Value.ContentLength);
+            //            _media.GetMediaFolders(DIRECTORY_TEMP);
+            //            var path = string.Format("{0}\\{1}-{2}-{3}", DIRECTORY_TEMP, m.SoftwareSubmissionID.ToString().Replace("-", ""), f.Key.ToString().Replace("-", "").Substring(15), filename.ToString().Replace("-", ""));
+            //            var sf = _storage.CreateFile(path);
+            //            using (var sw = sf.OpenWrite())
+            //                f.Value.InputStream.CopyTo(sw);
+            //            f.Value.InputStream.Close();
+            //            try
+            //            {
+
+            //                using (var dh = new DocHelper.FilterReader(Path.Combine(storagePath, path)))
+            //                    file.FileContent = dh.ReadToEnd();
+            //            }
+            //            catch { }
+            //            using (var sr = sf.OpenRead())
+            //                file.FileBytes = sr.ToByteArray();
+            //            _storage.DeleteFile(path);
+            //            file.FileChecksum = file.FileBytes.ComputeHash();
+            //            d.FileDatas.AddObject(file);
+            //            d.SaveChanges(); //Commit after each file
+
+            //        }
+            //    }
+
+
+            //}
+
+            return true;
+        }
+
         public Guid? GetOrderInvoice(Guid orderID, string requestIPAddress)
         {
             try

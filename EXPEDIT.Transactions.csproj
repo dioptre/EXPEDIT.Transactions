@@ -263,6 +263,7 @@
     <Content Include="Views\User\SubmissionsPartial.cshtml" />
     <Content Include="Views\User\MySoftwareSubmissionsPartialPager.cshtml" />
     <Content Include="Views\User\MySoftwareSubmissionsPartial.cshtml" />
+    <Content Include="Views\User\SubmitProjectPledge.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\..\..\..\crednexus\src\main\CNX.Shared\CNX.Shared.csproj">
@@ -328,6 +329,8 @@
     <Compile Include="ViewModels\AccountViewModel.cs" />
     <Compile Include="ViewModels\ContactViewModel.cs" />
     <Compile Include="ViewModels\ContactAddressViewModel.cs" />
+    <Compile Include="ViewModels\ProjectPledgeOfferViewModel.cs" />
+    <Compile Include="ViewModels\ProjectPledgeViewModel.cs" />
     <Compile Include="ViewModels\LicenseAssetModelPartViewModel.cs" />
     <Compile Include="ViewModels\LicenseAssetViewModel.cs" />
     <Compile Include="ViewModels\LicenseViewModel.cs" />

@@ -239,18 +239,35 @@ namespace EXPEDIT.Transactions.Controllers
         [Themed(Enabled=false)]
         public virtual ActionResult UploadFile()
         {
-            var id = Request.Params["SoftwareSubmissionID"];
-            if (string.IsNullOrWhiteSpace(id))
-                return null;
-            SoftwareSubmissionViewModel s = new SoftwareSubmissionViewModel { SoftwareSubmissionID = new Guid(id) , FileLengths = new Dictionary<Guid,int>()};
-            if (s.Files == null)
-                s.Files = new Dictionary<Guid, HttpPostedFileBase>();
-            for (int i = 0; i < Request.Files.Count; i++ )
-                s.Files.Add(Guid.NewGuid(), Request.Files[i]);
-            _transactions.SubmitSoftware(s);
+            var softwareID = Request.Params["SoftwareSubmissionID"];
+            var projectPledgeID = Request.Params["ProjectPledgeID"];
+            var rFiles = new Dictionary<Guid, HttpPostedFileBase>();
+            var rFileLengths = new Dictionary<Guid, int>();
+            if (!string.IsNullOrWhiteSpace(softwareID))
+            {
+                SoftwareSubmissionViewModel s = new SoftwareSubmissionViewModel { SoftwareSubmissionID = new Guid(softwareID), FileLengths = new Dictionary<Guid, int>() };
+                if (s.Files == null)
+                    s.Files = new Dictionary<Guid, HttpPostedFileBase>();
+                for (int i = 0; i < Request.Files.Count; i++)
+                    s.Files.Add(Guid.NewGuid(), Request.Files[i]);
+                _transactions.SubmitSoftware(s);
+                rFiles = s.Files;
+                rFileLengths = s.FileLengths;
+            }
+            else if (!string.IsNullOrWhiteSpace(projectPledgeID))
+            {
+                var s = new ProjectPledgeViewModel { ProjectPledgeID = new Guid(projectPledgeID), FileLengths = new Dictionary<Guid, int>() };
+                if (s.Files == null)
+                    s.Files = new Dictionary<Guid, HttpPostedFileBase>();
+                for (int i = 0; i < Request.Files.Count; i++)
+                    s.Files.Add(Guid.NewGuid(), Request.Files[i]);
+                _transactions.SubmitProjectPledge(s);
+                rFiles = s.Files;
+                rFileLengths = s.FileLengths;
+            }
             var list = new List<dynamic>();
-            foreach (var f in s.Files)
-                list.Add(Build<ExpandoObject>.NewObject(name: f.Value.FileName, type: "application/octet", size: s.FileLengths[f.Key], url: VirtualPathUtility.ToAbsolute(string.Format("~/share/file/{0}", f.Key))));
+            foreach (var f in rFiles)
+                list.Add(Build<ExpandoObject>.NewObject(name: f.Value.FileName, type: "application/octet", size: rFileLengths[f.Key], url: VirtualPathUtility.ToAbsolute(string.Format("~/share/file/{0}", f.Key))));
             return new JsonHelper.JsonNetResult(new { files = list.ToArray() }, JsonRequestBehavior.AllowGet);
         }
 
@@ -273,6 +290,27 @@ namespace EXPEDIT.Transactions.Controllers
             //Save form
             if (_transactions.SubmitSoftware(s))
                 return new RedirectResult(System.Web.VirtualPathUtility.ToAbsolute("~/SubmitSoftwareConfirmed"));
+            return View(s);
+        }
+
+        [Authorize]
+        public ActionResult SubmitProjectPledge()
+        {
+            if (!_services.Authorizer.Authorize(Permissions.PartnerSoftware, T("Can't submit project pledge")))
+                return new HttpUnauthorizedResult();
+            var m = new ProjectPledgeViewModel { ProjectPledgeID = Guid.NewGuid() };
+            //Show form
+            return View(m);
+        }
+
+        [Authorize]
+        [HttpPost]
+        [ValidateInput(false)]
+        public ActionResult SubmitProjectPledge(ProjectPledgeViewModel s)
+        {
+            //Save form
+            if (_transactions.SubmitProjectPledge(s))
+                return new RedirectResult(System.Web.VirtualPathUtility.ToAbsolute("~/SubmitProjectPledgeConfirmed"));
             return View(s);
         }
 
