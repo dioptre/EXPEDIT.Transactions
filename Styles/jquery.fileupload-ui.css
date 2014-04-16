@@ -1,4 +1,4 @@
-@charset "UTF-8";
+﻿@charset "UTF-8";
 /*
  * jQuery File Upload UI Plugin CSS 9.0.0
  * https://github.com/blueimp/jQuery-File-Upload
@@ -28,7 +28,7 @@
   display: block;
   width: 32px;
   height: 32px;
-  background: url("../img/loading.gif") center no-repeat;
+  background: url("../Images/loading.gif") center no-repeat;
   background-size: contain;
 }
 .files audio,

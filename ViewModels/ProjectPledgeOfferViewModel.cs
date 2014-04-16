@@ -17,6 +17,9 @@ namespace EXPEDIT.Transactions.ViewModels
         public DateTime? Offered { get; set; }
         public decimal? Amount { get; set; }
         public DateTime? AmountPaid { get; set; }
-
+        public DateTime? Realises { get; set; }
+        public DateTime? Realised { get; set; }
+        public DateTime? Expires { get; set; }
+        public DateTime? Expired { get; set; }
     }
 }

@@ -20,27 +20,32 @@ namespace EXPEDIT.Transactions.ViewModels
         public string ProjectName { get; set; }
         public string ProjectCode { get; set; }
         [Required, DisplayName("Project Description")]
-        public string PledgeDescription { get; set; }
+        public string Description { get; set; }
         public decimal? Deposit { get; set; }
-        public decimal? TargetPledgeAmount { get { return EstimatedCost; } set { EstimatedCost = value; } }
+        public decimal? TargetAmount { get { return EstimatedCost; } set { EstimatedCost = value; } }
         [Required, DisplayName("Pledge")]
-        public decimal? PledgeAmount { get; set; }
+        public decimal? Amount { get; set; }
         public Guid? CurrencyID { get; set; }
         public string CurrencyPrefix { get; set; }
         public string CurrencyPostfix { get; set; }
         public Guid? AcceptedProjectOfferID { get; set; }
         public decimal? AcceptedOfferAmount { get; set; }
         public string AcceptedOfferDescription { get; set; }
-        [Required, DisplayName("Worker")]
+        [DisplayName("Worker")]
         public string AcceptedOfferUsername { get; set; }
         public DateTime? AcceptedOffer { get; set; }
         public DateTime? QuorumNegotiated { get; set; }
         public Guid? QuorumOverseer { get; set; }
         public string QuorumOverseerName { get; set; }
-        public DateTime? PledgePaid { get; set; }
+        public DateTime? Paid { get; set; }
         public DateTime? OfferPaid { get; set; }
-        [Required, DisplayName("Pledged By")]
-        public string PledgeUsername { get; set; }
+        [DisplayName("Pledged By")]
+        public string Username { get; set; }
+        public DateTime? Realises { get; set; }
+        public DateTime? Realised { get; set; }
+        [Required, DisplayName("Pledge Expires")]
+        public DateTime? Expires { get; set; }
+        public DateTime? Expired { get; set; }
 
         public Guid? ProjectID { get; set; }
         public Guid? ProjectTypeID { get; set; }
@@ -51,7 +56,7 @@ namespace EXPEDIT.Transactions.ViewModels
         public Guid? ProjectDeliverableID { get; set; }
         public Guid? WorkTypeID { get; set; }
         [Required, DisplayName("Project Due")]
-        public DateTime Due { get; set; }
+        public DateTime? Due { get; set; }
         public Guid? InitiatedBy { get; set; }        
         public Guid? ApprovedBy { get; set; }
         [Required, DisplayName("Estimated Cost")]

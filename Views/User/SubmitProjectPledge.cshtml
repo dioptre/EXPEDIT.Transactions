@@ -16,9 +16,14 @@
         What's your projects <strong>name</strong>?
     </div>
     <div class="editor-field">
-        @*@Html.CheckBoxFor(m => m.ForSale)*@
+       @Html.TextBoxFor(m => m.ProjectName)
     </div>  
-    @*<legend></legend>*@
+     <div class="editor-label">
+        How much will you <strong>contribute</strong>?
+    </div>
+    <div class="editor-field">
+       @Html.TextBoxFor(m => m.Amount)
+    </div>  
     <div class="editor-label">
         <p>Please describe your project:</p>
     </div>
@@ -29,6 +34,36 @@
         {"style", "width:100%"}
 	 })<br />
     </div>   
+     <div class="editor-label">
+        When will your offer <strong>expire</strong>?
+    </div>
+    <div class="editor-field">
+       @Html.TextBoxFor(m => m.Expires)
+    </div>  
+     <div class="editor-label">
+        When could your offer first be <strong>accepted</strong>?
+    </div>
+    <div class="editor-field">
+       @Html.TextBoxFor(m => m.Realises)
+    </div>  
+     <div class="editor-label">
+        When are the deliverables <strong>due</strong>?
+    </div>
+    <div class="editor-field">
+       @Html.TextBoxFor(m => m.Due)
+    </div>  
+     <div class="editor-label">
+        What's the estimated <strong>cost</strong>? (If requiring more than one investor pledge)
+    </div>
+    <div class="editor-field">
+       @Html.TextBoxFor(m => m.EstimatedCost)
+    </div>  
+     <div class="editor-label">
+        What's the estimated <strong>value</strong>? (To you or the industry)
+    </div>
+    <div class="editor-field">
+       @Html.TextBoxFor(m => m.EstimatedValue)
+    </div>  
     <div class="editor-label">
         <p style="margin-top:9px;">Upload supporting files:</p>
     </div>
@@ -233,39 +268,32 @@
              }
              return false;
          });
+
+
+         $("#form1").submit(function (e) {
+             // prevent default posting of form
+             e.preventDefault();
+             e.returnValue = false;
+         }).validate({
+             rules: {
+                    
+                    ProjectName : { required: true, positiveNumber: true },
+                }                  
+            
+        });
+
+
+
      });
 
      function initSimpleFileUpload() {
          'use strict';
 
-         ////// Initialize the jQuery File Upload widget:
-         //$('#fileupload').fileupload({
-         //    // Uncomment the following to send cross-domain cookies:
-         //    //xhrFields: {withCredentials: true},
-         //    url: '/store/user/uploadfile'
-         //});
-
          $('#fileupload').fileupload({
              url: '/store/user/uploadfile',
              dataType: 'json',
              autoUpload: true,
-             //add: function (e, data) {
-             //    jqXHRData = data;
-             //    data.process();
-             //},
-             //done: function (event, data) {
-             //    if (data.result.isUploaded) {
-
-             //    }
-             //    else {
-             //        alert(data.result.message);
-             //    }                 
-             //},
-             //fail: function (event, data) {
-             //    if (data.files[0].error) {
-             //        alert(data.files[0].error);
-             //    }
-             //},
+     
              formData: function (form) {
                  return [{ name: "__RequestVerificationToken", value: $('input[name="__RequestVerificationToken"]').val() },
                      { name: "ProjectPledgeID", value: "@Model.ProjectPledgeID" }
@@ -273,15 +301,7 @@
              }
          });
 
-         // Enable iframe cross-domain access via redirect option:
-         //$('#fileupload').fileupload(
-         //    'option',
-         //    'redirect',
-         //    window.location.href.replace(
-         //        /\/[^\/]*$/,
-         //        '/cors/result.html?%s'
-         //    )
-         //);
+
 
        
          $('#fileupload').addClass('fileupload-processing');
@@ -302,59 +322,6 @@
 
      }
 
-
-     //$(function () {
-     //    'use strict';
-
-     //    // Initialize the jQuery File Upload widget:
-     //    $('#fu-my-file').fileupload();
-
-     //    $('#fu-my-file').fileupload('option', {
-     //        autoUpload: true,
-     //        url: '/store/user/uploadfile',
-     //        dataType: 'json',
-     //    //maxFileSize: 2000000, // Size in Bytes – 2 MB
-     //    add: function (e, data) {
-     //        var goUpload = true;
-     //        var uploadFile = data.files[0];
-
-     //        if (!(/\.(gif|jpg|jpeg|tiff|png|csv|pdf)$/i).test(uploadFile.name)) {
-     //            alert('Wrong type');
-     //            goUpload = false;
-     //        } else if (uploadFile.size > 2000000) { // 2mb
-     //            alert('Please upload a smaller file, max size is 2 MB');
-     //            goUpload = false;
-     //        }
-     //        else {
-     //            alert(uploadFile.name);
-     //        }
-
-     //        if (goUpload == true) {
-     //            //showLoader();
-     //            var jqXHR = data.submit()
-     //            .success(function (result, textStatus, jqXHR) {
-
-     //                if (result.isValid) {
-
-     //                }
-     //                else {
-
-     //                }
-     //            })
-     //            .error(function (jqXHR, textStatus, errorThrown) {
-     //                if (typeof (jqXHR) != 'undefined' || typeof (textStatus) != 'undefined' || typeof (errorThrown) != 'undefined') {
-     //                    alert(textStatus + errorThrown + jqXHR);
-     //                }
-     //            });
-     //        }
-     //    },
-     //    fail: function (event, data) {
-     //        if (data.files[0].error) {
-     //            alert(data.files[0].error);
-     //        }
-     //    }
-     //});
-     //});
 
 
 </script>
