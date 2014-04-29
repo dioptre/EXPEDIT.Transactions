@@ -330,8 +330,8 @@
     <Compile Include="ViewModels\AccountViewModel.cs" />
     <Compile Include="ViewModels\ContactViewModel.cs" />
     <Compile Include="ViewModels\ContactAddressViewModel.cs" />
-    <Compile Include="ViewModels\ProjectPledgeOfferViewModel.cs" />
-    <Compile Include="ViewModels\ProjectPledgeViewModel.cs" />
+    <Compile Include="ViewModels\VMarketOfferViewModel.cs" />
+    <Compile Include="ViewModels\VMarketViewModel.cs" />
     <Compile Include="ViewModels\LicenseAssetModelPartViewModel.cs" />
     <Compile Include="ViewModels\LicenseAssetViewModel.cs" />
     <Compile Include="ViewModels\LicenseViewModel.cs" />

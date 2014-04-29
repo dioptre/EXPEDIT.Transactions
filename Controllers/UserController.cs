@@ -256,7 +256,7 @@ namespace EXPEDIT.Transactions.Controllers
             }
             else if (!string.IsNullOrWhiteSpace(projectPledgeID))
             {
-                var s = new ProjectPledgeViewModel { ProjectPledgeID = new Guid(projectPledgeID), FileLengths = new Dictionary<Guid, int>() };
+                var s = new VMarketPledgeViewModel { ProjectPledgeID = new Guid(projectPledgeID), FileLengths = new Dictionary<Guid, int>() };
                 if (s.Files == null)
                     s.Files = new Dictionary<Guid, HttpPostedFileBase>();
                 for (int i = 0; i < Request.Files.Count; i++)
@@ -298,7 +298,7 @@ namespace EXPEDIT.Transactions.Controllers
         {
             if (!_services.Authorizer.Authorize(Permissions.PartnerSoftware, T("Can't submit project pledge")))
                 return new HttpUnauthorizedResult();
-            var m = new ProjectPledgeViewModel { ProjectPledgeID = Guid.NewGuid() };
+            var m = new VMarketPledgeViewModel { ProjectPledgeID = Guid.NewGuid() };
             //Show form
             return View(m);
         }
@@ -306,7 +306,7 @@ namespace EXPEDIT.Transactions.Controllers
         [Authorize]
         [HttpPost]
         [ValidateInput(false)]
-        public ActionResult SubmitProjectPledge(ProjectPledgeViewModel s)
+        public ActionResult SubmitProjectPledge(VMarketPledgeViewModel s)
         {
             //Save form
             if (_transactions.SubmitProjectPledge(s))

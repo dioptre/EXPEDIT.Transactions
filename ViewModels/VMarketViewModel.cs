@@ -12,7 +12,7 @@ using NKD.Module.BusinessObjects;
 namespace EXPEDIT.Transactions.ViewModels
 {
     [JsonObject]
-    public class ProjectPledgeViewModel
+    public class VMarketPledgeViewModel
     {
         [JsonIgnore]
         public Guid? ProjectPledgeID { get; set; }
@@ -93,7 +93,7 @@ namespace EXPEDIT.Transactions.ViewModels
         public DateTime? Ordered { get; set; }
         public string PurchasingNotes { get; set; }
 
-        public IEnumerable<ProjectPledgeOfferViewModel> Offers { get; set; }
+        public IEnumerable<VMarketOfferViewModel> Offers { get; set; }
 
         [JsonIgnore]
         public Dictionary<Guid, HttpPostedFileBase> Files { get; set; }

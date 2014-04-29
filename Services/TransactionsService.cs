@@ -1302,7 +1302,7 @@ namespace EXPEDIT.Transactions.Services {
         }
 
 
-        public bool SubmitProjectPledge(ProjectPledgeViewModel m)
+        public bool SubmitProjectPledge(VMarketPledgeViewModel m)
         {
             //if (m.SoftwareSubmissionID == default(Guid))
             //    return false;

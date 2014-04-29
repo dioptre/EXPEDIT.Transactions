@@ -7,7 +7,7 @@ using System.Linq;
 using Newtonsoft.Json;
 namespace EXPEDIT.Transactions.ViewModels
 {
-    public class ProjectPledgeOfferViewModel
+    public class VMarketOfferViewModel
     {
         public Guid? ProjectOfferID { get; set; }
         public Guid? ProjectID { get; set; }
