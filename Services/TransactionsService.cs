@@ -127,14 +127,12 @@ namespace EXPEDIT.Transactions.Services {
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new NKDC(_users.ApplicationConnectionString, null);
-                var md = (from o in d.MetaDatas 
-                          where o.MetaDataID==antiForgeryKey.Value
-                          && o.MetaDataType == ConstantsHelper.METADATA_ANTIFORGERY 
-                          && o.ContentToIndex == orderID
-                          && o.Version == 0
-                          && o.VersionDeletedBy == null
-                          select o).Single();
-                d.MetaDatas.DeleteObject(md);
+                d.MetaDatas.Delete(f =>
+                            f.MetaDataID == antiForgeryKey.Value
+                            && f.MetaDataType == ConstantsHelper.METADATA_ANTIFORGERY
+                          && f.ContentToIndex == orderID
+                          && f.Version == 0
+                          && f.VersionDeletedBy == null);
                 d.SaveChanges();
             }
             _payment.PreparePaymentResult(ref order);
@@ -598,9 +596,9 @@ namespace EXPEDIT.Transactions.Services {
                                     if (mu != null)
                                     {
                                         if (mu.UnitID == ConstantsHelper.UNIT_SI_SECONDS)
-                                            nextMaintenance = now.AddSeconds(Convert.ToDouble(supplyItem.QuantityModel.Value));
+                                            nextMaintenance = now.AddSeconds(1.0); //supplyItem.QuantityModel.Value
                                         else if (mu.EquivalentUnitID == ConstantsHelper.UNIT_SI_SECONDS)
-                                            nextMaintenance = now.AddSeconds(Convert.ToDouble(supplyItem.QuantityModel.Value * mu.EquivalentMultiplier));
+                                            nextMaintenance = now.AddSeconds(Convert.ToDouble(1m * mu.EquivalentMultiplier));
                                         else
                                             warnings.Add(string.Format("Product unit description not time based. Could not update maintenance schedule. Order: ({0}) Asset: ({1})", order.OrderID, asset.AssetID));
                                     }
@@ -615,14 +613,16 @@ namespace EXPEDIT.Transactions.Services {
                                     {
                                         LicenseID = Guid.NewGuid(),
                                         LicenseeGUID = contact,
+                                        LicenseeUsername = _users.Username,
                                         ContactID = contact,
                                         ValidForUnitID = supplyItem.ModelUnitID,
-                                        ValidForDuration = supplyItem.QuantityModel,
+                                        ValidForDuration = 1, //supplyItem.QuantityModel,
                                         ValidFrom = now,
                                         Expiry = nextMaintenance,
                                         SupportExpiry = nextMaintenance,
                                         ApplicationID = application,
-                                        ServiceAuthorisationMethod = ConstantsHelper.LICENSE_SERVER_AUTH_METHOD
+                                        ServiceAuthorisationMethod = ConstantsHelper.LICENSE_SERVER_AUTH_METHOD,
+                                        VersionUpdated = now
                                     };
                                     d.Licenses.AddObject(license);
                                     var licenseAsset = new LicenseAsset
@@ -703,14 +703,16 @@ namespace EXPEDIT.Transactions.Services {
                     OriginalAmount = i.Total,
                     CurrencyID = i.CurrencyID,
                     Amount = order.PaymentPaid,
-                    Paid = now
+                    Paid = now,
+                    VersionUpdated = now
                 };
                 d.Payments.AddObject(pay);
                 //paymentInvoice
                 var payInvoice = new PaymentInvoice
                 {
                     PaymentID = pay.PaymentID,
-                    InvoiceID = i.InvoiceID
+                    InvoiceID = i.InvoiceID,
+                    VersionUpdated = now
                 };
                 pay.PaymentInvoice.Add(payInvoice);
                 //Check invoice amt vs order.PaymentPaid!
@@ -1421,7 +1423,7 @@ namespace EXPEDIT.Transactions.Services {
                 var application = _users.ApplicationID;
                 var contact = _users.ContactID;
                 var company = _users.ApplicationCompanyID;
-                var server = _users.ServerID;
+                //var server = _users.ServerID;
                 var now = DateTime.UtcNow;
                 using (new TransactionScope(TransactionScopeOption.Suppress))
                 {
@@ -1462,7 +1464,7 @@ namespace EXPEDIT.Transactions.Services {
                         ,
                         VersionOwnerContactID = contact
                         ,
-                        VersionOwnerCompanyID = company
+                        VersionOwnerCompanyID = null //Only allow me to view
                         ,
                         DocumentType = ConstantsHelper.DOCUMENT_TYPE_INVOICE
                     };
@@ -1595,7 +1597,7 @@ namespace EXPEDIT.Transactions.Services {
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new NKDC(_users.ApplicationConnectionString, null);
-                var r = (from o in d.E_SP_GetLicenses(application, null, null, null, contact, startRowIndex, pageSize)
+                var r = (from o in d.E_SP_GetLicenses(application, null, null, null, contact, null, null, null, null, startRowIndex, pageSize)
                         select o).ToArray();
                 var m = new List<LicenseViewModel>();
                 foreach(var o in r)
@@ -1638,8 +1640,12 @@ namespace EXPEDIT.Transactions.Services {
                             };
                         m.Add(l);                       
                     }
-                    if (o.DownloadID.HasValue && !l.LicenseDownloads.Any(f => f.DownloadID == o.DownloadID))
-                        ((List<DownloadViewModel>)l.LicenseDownloads).Add(new DownloadViewModel { DownloadID = o.DownloadID, Description = o.Description });
+                    if (o.Downloads != null)
+                    {
+                        dynamic[] downloads = JsonConvert.DeserializeObject<NullableExpandoObject[]>(o.Downloads);
+                        foreach(dynamic dl in downloads)
+                            ((List<DownloadViewModel>)l.LicenseDownloads).Add(new DownloadViewModel { DownloadID = dl.id as Guid?, Description = dl.description });
+                    }                        
                     LicenseAssetViewModel la = l.LicenseAssets.FirstOrDefault(f => f.LicenseAssetID == o.LicenseAssetID);
                     if (o.LicenseAssetID.HasValue && la == null)
                     {
@@ -1842,8 +1848,86 @@ namespace EXPEDIT.Transactions.Services {
                 d.SaveChanges();
                 return true;
             }           
-            
-            return false;
+                        
+        }
+
+        public bool IsUserModelLicenseValid(Guid modelID, Guid? contactID = null)
+        {
+            var toReturn = false;
+            var application = _users.ApplicationID;
+            var username = _users.Username;
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                var d = new NKDC(_users.ApplicationConnectionString, null);
+                if (contactID.HasValue)
+                    username = (from o in d.Contacts where o.Version == 0 && o.VersionDeletedBy == null && o.ContactID == contactID select o.Username).Single();
+                var r = (from o in d.E_SP_GetLicenses(application, null, null, null, null, username, null, modelID, null, null, null)
+                         select o).ToArray();
+                if (r.Any(f => f.Expiry > DateTime.UtcNow || f.Expiry == default(DateTime?)))
+                    return true;
+                else
+                {
+                    var externalModelNames = (from o in d.ApplicationPaymentProviderProductModels
+                                              where
+                                                  o.ModelID == modelID &&
+                                                  o.VersionDeletedBy == null &&
+                                                  o.Version == 0 &&
+                                                  o.ApplicationPaymentProviderProduct.Version == 0 &&
+                                                  o.ApplicationPaymentProviderProduct.VersionDeletedBy == null
+                                              select o.ApplicationPaymentProviderProduct.PaymentProviderProductName).AsEnumerable().Select(f=>f.ToUpperInvariant()).ToArray();
+                    foreach(var l in r) {
+                        if (string.IsNullOrWhiteSpace(l.PaymentReferences))
+                            continue;
+                        if (!l.VersionUpdated.HasValue || (l.VersionUpdated.HasValue && l.VersionUpdated.Value.AddDays(0.5) < DateTime.UtcNow)) //only check with payment provider once every 12 hours
+                        {
+                            var license = (from o in d.Licenses where o.LicenseID == l.LicenseID select o).Single();
+                            var payments = l.PaymentReferences.Split(new string[] { "::" }, StringSplitOptions.RemoveEmptyEntries);
+                            foreach (var payment in payments)
+                            {
+                                string sub;
+                                if (_payment.IsSubscriptionValid(payment, out sub))
+                                {
+                                    if (externalModelNames.Contains(sub.ToUpperInvariant()))
+                                    {
+                                        //Update license expiry OK
+                                        var multiplier = (from o in d.DictionaryUnits
+                                                          where
+                                                              (o.EquivalentUnitID == ConstantsHelper.UNIT_SI_SECONDS || o.UnitID == ConstantsHelper.UNIT_SI_SECONDS) &&
+                                                              o.UnitID == l.ValidForUnitID &&
+                                                              o.Version == 0 &&
+                                                              o.VersionDeletedBy == null &&
+                                                              o.EquivalentMultiplier != null
+                                                          select o.EquivalentMultiplier).FirstOrDefault();
+                                        if (multiplier.HasValue && multiplier.Value >= 1)
+                                        {
+                                            while (license.Expiry < DateTime.UtcNow)
+                                            {
+                                                license.Expiry = license.Expiry.Value.AddSeconds(Convert.ToDouble(multiplier));
+                                                license.SupportExpiry = license.Expiry;
+                                            }                                            
+                                        }
+                                        toReturn = true;
+
+                                    }
+                                }
+                                else
+                                {
+                                    if (externalModelNames.Contains(sub.ToUpperInvariant()))
+                                    {
+                                        //Update license expiry EXPIRED
+                                        //just do nothing for now
+                                    }
+                                }
+                            }
+                            license.VersionUpdated = DateTime.UtcNow;
+                            d.SaveChanges();
+                        }
+                    }
+                }
+
+            }
+            return toReturn;
+
         }
     }
 }

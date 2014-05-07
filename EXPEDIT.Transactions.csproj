@@ -326,6 +326,7 @@
     <Compile Include="Services\Payments\IPayment.cs" />
     <Compile Include="Services\Payments\PaymentUtils.cs" />
     <Compile Include="Services\TransactionsService.cs" />
+    <Compile Include="Services\XmlRpcHandler.cs" />
     <Compile Include="ViewModels\ContractConditionViewModel.cs" />
     <Compile Include="ViewModels\AccountViewModel.cs" />
     <Compile Include="ViewModels\ContactViewModel.cs" />

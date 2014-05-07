@@ -141,33 +141,38 @@ namespace EXPEDIT.Transactions.Services.Payments
             order.PaymentReference = "";
             order.PaymentResponse = "";
             foreach (var p in order.Products)
-            {                
-                //TODO Support non-subscriptions
-                var SubscriptionRequest = new SubscriptionRequest
+            {
+                if (!p.ModelUnits.HasValue || p.ModelUnits <= 0)
+                    p.ModelUnits = 1m;
+                for (int i = 0; i < p.ModelUnits; i++)
                 {
-                    PaymentMethodToken = PaymentMethodToken,
-                    PlanId = p.PaymentProviderProductName,
-                    HasTrialPeriod = false,
-                    Price = p.Subtotal                                
-                };
-                Result<Subscription> result = gateway.Subscription.Create(SubscriptionRequest);
+                    //TODO Support non-subscriptions
+                    var SubscriptionRequest = new SubscriptionRequest
+                    {
+                        PaymentMethodToken = PaymentMethodToken,
+                        PlanId = p.PaymentProviderProductName,
+                        HasTrialPeriod = false,
+                        Price = p.Subtotal / p.ModelUnits
+                    };
+                    Result<Subscription> result = gateway.Subscription.Create(SubscriptionRequest);
 
-                if (result.IsSuccess())
-                {                    
-                    order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Subscribed | (uint)PaymentUtils.PaymentStatus.Success;
-                    order.PaymentResponse +=  string.Format("::{0}", result.Target.Status.ToString());
-                    order.PaymentPaid += result.Target.Price;
-                    order.PaymentReference += string.Format("::{0}", result.Target.Id);
-                    order.PaymentResponseShort += string.Format("::{0}", result.Message);
-                    p.Paid = true;
-                }
-                else
-                {
-                    order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Error;
-                    order.PaymentError = (uint)PaymentUtils.PaymentError.BadPayment;
-                    order.PaymentResponse = string.Format("{0},{1}::{2}", result.Message, string.Join(", ", result.Errors.DeepAll(), order.PaymentResponse));
-                    order.PaymentResponseShort = result.Message;
-                    break;
+                    if (result.IsSuccess())
+                    {
+                        order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Subscribed | (uint)PaymentUtils.PaymentStatus.Success;
+                        order.PaymentResponse += string.Format("::{0}", result.Target.Status.ToString());
+                        order.PaymentPaid += result.Target.Price;
+                        order.PaymentReference += string.Format("::{0}", result.Target.Id);
+                        order.PaymentResponseShort += string.Format("::{0}", result.Message);
+                        p.Paid = true;
+                    }
+                    else
+                    {
+                        order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Error;
+                        order.PaymentError = (uint)PaymentUtils.PaymentError.BadPayment;
+                        order.PaymentResponse = string.Format("{0},{1}::{2}", result.Message, string.Join(", ", result.Errors.DeepAll()), order.PaymentResponse);
+                        order.PaymentResponseShort = result.Message;
+                        break;
+                    }
                 }
             }
         }
@@ -175,6 +180,24 @@ namespace EXPEDIT.Transactions.Services.Payments
         public void MakePaymentResult(ref OrderViewModel order)
         {
             
+        }
+
+        public bool IsSubscriptionValid(string externalReference, out string subscriptionName)
+        {
+            try
+            {
+                Subscription subscription = gateway.Subscription.Find(externalReference);
+                subscriptionName = subscription.PlanId;
+                if (subscription.Balance > 0)
+                    return false;
+                else
+                    return true;
+            }
+            catch
+            {
+                subscriptionName = null;
+                return false;
+            }
         }
     }
 }

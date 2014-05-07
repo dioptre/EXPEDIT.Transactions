@@ -118,5 +118,8 @@ namespace EXPEDIT.Transactions.Services
         [OperationContract]
         bool UpdateCart(NameValueCollection m);
 
+        [OperationContract]
+        bool IsUserModelLicenseValid(Guid modelID, Guid? contactID = null);
+
     }
 }

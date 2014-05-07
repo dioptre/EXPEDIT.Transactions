@@ -14,5 +14,6 @@ namespace EXPEDIT.Transactions.Services.Payments
         void MakePaymentResult(ref OrderViewModel order);
         void PreparePayment(ref OrderViewModel order);
         void PreparePaymentResult(ref OrderViewModel order);
+        bool IsSubscriptionValid(string externalReference, out string subscriptionName);
     }
 }

@@ -75,7 +75,12 @@
                     email2: true
                 },
             },
-            submitHandler: function(form) {
+            submitHandler: function (form) {
+                // let's select and cache all the fields
+                //var inputs = $('#payment-form').find("input, select, button, textarea, hidden");
+                // let's disable the inputs for the duration of the ajax request
+                //inputs.prop("disabled", true);
+                alertify.log("Please wait while we process your payment. Payment may take up to 30 seconds.", null, 0);
                 form.submit();
             }            
         });

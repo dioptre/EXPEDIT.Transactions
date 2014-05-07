@@ -523,7 +523,17 @@ namespace EXPEDIT.Transactions.Controllers
                 return new HttpStatusCodeResult(System.Net.HttpStatusCode.ExpectationFailed);
         }
 
-
+        [HttpGet]
+        [Themed(Enabled = false)]
+        public ActionResult ValidModel(string id)
+        {
+            if (!User.Identity.IsAuthenticated)
+                return new HttpStatusCodeResult(System.Net.HttpStatusCode.Forbidden);
+            Guid temp;
+            if (!Guid.TryParse(id, out temp))
+                return new HttpStatusCodeResult(System.Net.HttpStatusCode.ExpectationFailed);
+            return new JsonHelper.JsonNetResult(_transactions.IsUserModelLicenseValid(temp), JsonRequestBehavior.AllowGet);
+        }
 
 
     }
