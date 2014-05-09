@@ -80,7 +80,13 @@ namespace EXPEDIT.Transactions.Services {
             if (!Guid.TryParse(modelID, out mid))
                 return null;
             if (!Guid.TryParse(contactID, out cid))
-                return null;
+            {
+                Guid? tcid = _users.GetContactID(contactID);
+                if (!tcid.HasValue)
+                    return null;
+                else
+                    cid = tcid.Value;
+            }
             return JsonConvert.SerializeObject(new { valid = _transactions.IsUserModelLicenseValid(mid, cid)});
         }
 
