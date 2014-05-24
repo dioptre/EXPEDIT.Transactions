@@ -19,6 +19,8 @@ namespace EXPEDIT.Transactions.Services.Payments
 
         public BraintreeUtils(IUsersService users, IOrchardServices orchardServices)
         {
+            if (orchardServices.WorkContext.HttpContext == null)
+                return;
             _users = users;
             var merchant = new
             {
@@ -45,6 +47,8 @@ namespace EXPEDIT.Transactions.Services.Payments
 
         public void PreparePayment(ref OrderViewModel order)
         {
+            if (gateway == null || _merchant == null)
+                throw new NotSupportedException("Require a web context to prepare payment");
             if (!order.OrderID.HasValue)
                 throw new NotSupportedException("Can't make an order without an order ID");
             string token = null;
@@ -86,6 +90,8 @@ namespace EXPEDIT.Transactions.Services.Payments
 
         public void PreparePaymentResult(ref OrderViewModel order)
         {
+            if (gateway == null)
+                throw new NotSupportedException("Require a web context to prepare payment result");
             try
             {
                 Result<Customer> result = gateway.TransparentRedirect.ConfirmCustomer(order.PaymentQuery);
@@ -129,6 +135,8 @@ namespace EXPEDIT.Transactions.Services.Payments
 
         public void MakePayment(ref OrderViewModel order)
         {
+            if (gateway == null)
+                throw new NotSupportedException("Require a web context to make payment");
             //var customerRequest = new CustomerSearchRequest().Id.Is(order.PaymentCustomerID);
             //ResourceCollection<Customer> customers = gateway.Customer.Search(customerRequest);
             //// There should only ever be one customer with the given ID
@@ -186,6 +194,8 @@ namespace EXPEDIT.Transactions.Services.Payments
         {
             try
             {
+                if (gateway == null)
+                    throw new NotSupportedException("Require a web context to facilitate payment introspection.");
                 Subscription subscription = gateway.Subscription.Find(externalReference);
                 subscriptionName = subscription.PlanId;
                 if (subscription.Balance > 0)

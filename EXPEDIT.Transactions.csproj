@@ -197,8 +197,8 @@
     <Content Include="Content\themes\base\minified\jquery.ui.tooltip.min.css" />
     <Content Include="Images\loading.gif" />
     <Content Include="LICENSE.TXT" />
-    <None Include="Scripts\jquery.validate-vsdoc.js" />
-    <None Include="Scripts\jquery-1.6.4-vsdoc.js" />
+    <Content Include="Scripts\jquery.validate-vsdoc.js" />
+    <Content Include="Scripts\jquery-1.6.4-vsdoc.js" />
     <Content Include="Scripts\alertify.js" />
     <Content Include="Scripts\alertify.min.js" />
     <Content Include="Scripts\canvas-to-blob.min.js" />
@@ -268,7 +268,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\..\..\..\crednexus\src\main\CNX.Shared\CNX.Shared.csproj">
-      <Project>{b303b44d-33f4-453c-bcf9-7a57bdd9b25b}</Project>
+      <Project>{359608d7-fafe-40e9-90c6-bd6df1c0fdcc}</Project>
       <Name>CNX.Shared</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\..\..\NKD.Extensions\NKD.Extensions.csproj">
