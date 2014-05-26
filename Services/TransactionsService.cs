@@ -22,7 +22,7 @@ using Orchard.Data;
 using NKD.Module.BusinessObjects;
 using EXPEDIT.Transactions.ViewModels;
 using NKD.Services;
-using Orchard.Media.Services;
+using Orchard.MediaLibrary.Services;
 using EXPEDIT.Transactions.Helpers;
 using EXPEDIT.Transactions.Services.Payments;
 using EntityFramework.Extensions;
@@ -48,7 +48,7 @@ namespace EXPEDIT.Transactions.Services {
         private const string DIRECTORY_TEMP = "EXPEDIT.Transactions\\Temp";
         private readonly IOrchardServices _orchardServices;
         private readonly IUsersService _users;
-        private readonly IMediaService _media;
+        private readonly IMediaLibraryService _media;
         private readonly IPayment _payment;
         private readonly IStorageProvider _storage;
         private readonly IRoleService _roles;
@@ -60,8 +60,8 @@ namespace EXPEDIT.Transactions.Services {
 
         public TransactionsService(
             IOrchardServices orchardServices, 
-            IUsersService users,  
-            IMediaService media,
+            IUsersService users,
+            IMediaLibraryService media,
             IPayment payment,
             IStorageProvider storage,
             ShellSettings shellSettings,
@@ -905,7 +905,7 @@ namespace EXPEDIT.Transactions.Services {
             //var ownerCompanyID = _users.ApplicationCompanyID;
             //var supplier = "EPSOFT" etc
             var application = _users.ApplicationID;
-            var directory = _media.GetPublicUrl(@"EXPEDIT.Transactions");
+            var directory = _storage.GetPublicUrl(@"EXPEDIT.Transactions");
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new NKDC(_users.ApplicationConnectionString, null);

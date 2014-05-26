@@ -1,6 +1,6 @@
 ﻿@model EXPEDIT.Transactions.ViewModels.OrderProductViewModel
 <tr>
-<td><img src="@Model.Thumbnail" alt="" style="padding: 4px; line-height: 19.5px; border: 1px solid #ddd;" width="60" height="60"></td>
+<td><img src="@Model.Thumbnail" alt="" style="padding: 4px; line-height: 19.5px; border: 1px solid #ddd;max-width:60px;max-height:60px;" width="60" height="60"></td>
 <td>
 <h2>@Model.Title <small>@Model.Subtitle</small></h2>
 <p>@Html.Raw(Model.HTML)</p>
