@@ -1556,6 +1556,8 @@ namespace EXPEDIT.Transactions.Services {
                 var m = new List<SoftwareSubmissionViewModel>();
                 foreach (var o in r)
                 {
+                    if (o.ContentToIndex == null)
+                        continue;
                     dynamic md = JsonConvert.DeserializeObject<NullableExpandoObject>(o.ContentToIndex);
                     SoftwareSubmissionViewModel s = m.LastOrDefault();
                     if (s == null || s.SoftwareSubmissionID != o.MetaDataID)
