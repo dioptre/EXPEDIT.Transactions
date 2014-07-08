@@ -221,7 +221,9 @@ namespace EXPEDIT.Transactions.Services {
                                  PartID=o.PartID, 
                                  PaymentProviderProductID = o.ApplicationPaymentProviderProductID,
                                  PaymentProviderProductName= (o.ApplicationPaymentProviderProduct==null) ? null : o.ApplicationPaymentProviderProduct.PaymentProviderProductName,
-                                 Subtotal = o.Subtotal
+                                 Subtotal = o.Subtotal,
+                                 ProductUnitID = o.ModelUnitID,
+                                 ProductUnitName = o.UnitModel.StandardUnitName
                              });
                 else
                     items = (from o in d.SupplyItemDetailViews
@@ -231,12 +233,14 @@ namespace EXPEDIT.Transactions.Services {
                                  SupplierModelID = o.SupplierModelID,
                                  SupplierPartID = o.SupplierPartID,
                                  ModelID = o.ModelID,
+                                 ProductUnitName = o.ModelUnitName,
                                  PartID = o.PartID,
                                  PaymentProviderProductID = o.ApplicationPaymentProviderProductID,
                                  PartUnits = o.QuantityPart,
                                  ModelUnits = o.QuantityModel,
                                  LabourUnits = o.QuantityLabour,
                                  Subtotal = o.Subtotal,
+                                 ProductUnitID = o.ModelUnitID,
                                  ModelName = o.StandardModelName,
                                  CurrencyPostfix = o.PostfixCharacters,
                                  CurrencyPrefix = o.PrefixCharacters,
@@ -352,7 +356,9 @@ namespace EXPEDIT.Transactions.Services {
                               where ppProducts.Contains(o.ApplicationPaymentProviderProductID)
                               && p.Version == 0
                               && p.VersionDeletedBy == null
-                              select p.ApplicationPaymentProviderID).First();
+                              select p.ApplicationPaymentProviderID).FirstOrDefault();
+                    if (pp == default(Guid))
+                        pp = ConstantsHelper.PAYMENT_PROVIDER_DEFAULT;
                     var ppc = new ApplicationPaymentProviderContact
                     {
                         ApplicationPaymentProviderID = pp,
@@ -442,6 +448,7 @@ namespace EXPEDIT.Transactions.Services {
 
         public void UpdateOrderPaid(OrderViewModel order)
         {
+            var isAdmin = _orchardServices.Authorizer.Authorize(Orchard.Security.StandardPermissions.SiteOwner);
             var application = _users.ApplicationID;
             var customerID = order.PaymentCustomerID;
             var contact = _users.ContactID;
@@ -711,7 +718,7 @@ namespace EXPEDIT.Transactions.Services {
                 {
                     warnings.Add(string.Format("Discrepancy in payment, order: ({0}). Total:{1} & Paid:{2}", order.OrderID, i.Total, pay.Amount));
                 }
-                if (pay.Amount >= i.Total)
+                if (pay.Amount >= i.Total || isAdmin)
                 {
                     payInvoice.IsFinalPaymentInvoice = true;
                 }
@@ -900,7 +907,7 @@ namespace EXPEDIT.Transactions.Services {
         }
 
 
-        public IEnumerable<ProductViewModel> GetProducts(string text = null, Guid? supplierModelID = null, int? startRowIndex = null, int? pageSize=null)
+        public IEnumerable<ProductViewModel> GetProducts(string text = null, Guid? supplierModelID = null, int? startRowIndex = null, int? pageSize=null, string filterCategories = null)
         {
             //var ownerCompanyID = _users.ApplicationCompanyID;
             //var supplier = "EPSOFT" etc
@@ -909,7 +916,7 @@ namespace EXPEDIT.Transactions.Services {
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 var d = new NKDC(_users.ApplicationConnectionString, null);
-                return (from o in d.E_SP_GetProductModels(text, application, null, null, ConstantsHelper.DEVICE_TYPE_SOFTWARE, supplierModelID, startRowIndex, pageSize) 
+                return (from o in d.E_SP_GetProductModels(text, application, null, null, ConstantsHelper.DEVICE_TYPE_SOFTWARE, filterCategories, supplierModelID, startRowIndex, pageSize) 
                         select new ProductViewModel { 
                             SupplierModelID = o.SupplierModelID,
                             ModelID = o.ModelID, 
@@ -1846,6 +1853,8 @@ namespace EXPEDIT.Transactions.Services {
 
         public bool IsUserModelLicenseValid(Guid modelID, Guid? contactID = null)
         {
+            if (_orchardServices.Authorizer.Authorize(Orchard.Security.StandardPermissions.SiteOwner))
+                return true;
             var toReturn = false;
             var application = _users.ApplicationID;
             var username = _users.Username;

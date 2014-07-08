@@ -13,7 +13,8 @@ namespace EXPEDIT.Transactions.Services.Payments
             Error = 0x00,
             Success = 0x01,
             ReceivedCustomer = 0x02,
-            Subscribed = 0x04
+            Subscribed = 0x04,
+            Transacted = 0x08
         }
 
         public enum PaymentError : uint

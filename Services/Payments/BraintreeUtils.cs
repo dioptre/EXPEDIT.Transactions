@@ -8,6 +8,8 @@ using NKD.Services;
 using ImpromptuInterface;
 using System.Collections.Concurrent;
 using Orchard;
+using EXPEDIT.Share.Helpers;
+
 
 namespace EXPEDIT.Transactions.Services.Payments
 {
@@ -15,20 +17,101 @@ namespace EXPEDIT.Transactions.Services.Payments
     {
         private static BraintreeGateway gateway = null;
         private IUsersService _users = null;
+        private IOrchardServices _orchardServices = null;
         private IMerchant _merchant = null;
+
+
+        private static Braintree.Environment _environment = null;
+        private static Braintree.Environment environment
+        {
+            get
+            {
+                if (_environment == null)
+                {
+                    string env = string.Format("{0}", System.Configuration.ConfigurationManager.AppSettings["PaymentGateway"]);
+                    if (env == "Braintree.Environment.PRODUCTION")
+                        _environment = Braintree.Environment.PRODUCTION;
+                    else 
+                        _environment = Braintree.Environment.SANDBOX;
+                }
+                return _environment;
+            }
+        }
+        
+        
+        private static string _merchantID = null;
+        private static string merchantID
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(_merchantID))
+                {
+                    _merchantID = string.Format("{0}", System.Configuration.ConfigurationManager.AppSettings["PaymentMerchantID"]);
+                    if (string.IsNullOrWhiteSpace(_merchantID))
+                        _merchantID = "pfz8b9b2p286yp89";                    
+                }
+                return _merchantID;
+            }
+        }
+
+        private static string _publicKey = null;
+        private static string publicKey
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(_publicKey))
+                {
+                    _publicKey = string.Format("{0}", System.Configuration.ConfigurationManager.AppSettings["PaymentPublicKey"]);
+                    if (string.IsNullOrWhiteSpace(_publicKey))
+                        _publicKey = "59mqjnsyqypw6dpc";
+                }
+                return _publicKey;
+            }
+        }
+
+        private static string _privateKey = null;
+        private static string privateKey
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(_privateKey))
+                {
+                    _privateKey = string.Format("{0}", System.Configuration.ConfigurationManager.AppSettings["PaymentPrivateKey"]);
+                    if (string.IsNullOrWhiteSpace(_privateKey))
+                        _privateKey = "3478eedc910a0d4793a8d472571851df";
+                }
+                return _privateKey;
+            }
+        }
+
+        private static string _clientPublicKey = null;
+        private static string clientPublicKey
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(_clientPublicKey))
+                {
+                    _clientPublicKey = string.Format("{0}", System.Configuration.ConfigurationManager.AppSettings["PaymentClientPublicKey"]);
+                    if (string.IsNullOrWhiteSpace(_clientPublicKey))
+                        _clientPublicKey = @"MIIBCgKCAQEAwvQwIlEDkcHNpNfeIDQHIMvhZ/zb6y01QgVRXXbitzxSra5M+5zffgp1fT4vdIseuj435+SuYRmIQU4cHzK18BvZahCuyaOGV6eZIaOhsNTUd2vcSaTud96mxDmbeKfW3Gd2HqugH3RiwL5DpickR3hM6dlaArQBgcZlnpI4qAIVKbPePXk9Nj1aJ7mZOJWuqdwtAY7TkC7zc0lmFQWxZXQsmNSSUf+SY7OpA9mZX0KNs7HN4W0eQyqhQzjrJrrWrlCEWKaJlURZaDQ8fVrIU2Km99O8/yW3/TurCQDHThXFeFPBrul2SQ6ejQHpv93BN1bAiEVqjnr+FqdEA99mgwIDAQAB";
+                }
+                return _clientPublicKey;
+            }
+        }
 
         public BraintreeUtils(IUsersService users, IOrchardServices orchardServices)
         {
             if (orchardServices.WorkContext.HttpContext == null)
                 return;
             _users = users;
+            _orchardServices = orchardServices;
             var merchant = new
             {
-                Environment = Braintree.Environment.SANDBOX,
-                MerchantId = "pfz8b9b2p286yp89",
-                PublicKey = "59mqjnsyqypw6dpc",
-                PrivateKey = "3478eedc910a0d4793a8d472571851df",
-                ClientPublicKey = @"MIIBCgKCAQEAwvQwIlEDkcHNpNfeIDQHIMvhZ/zb6y01QgVRXXbitzxSra5M+5zffgp1fT4vdIseuj435+SuYRmIQU4cHzK18BvZahCuyaOGV6eZIaOhsNTUd2vcSaTud96mxDmbeKfW3Gd2HqugH3RiwL5DpickR3hM6dlaArQBgcZlnpI4qAIVKbPePXk9Nj1aJ7mZOJWuqdwtAY7TkC7zc0lmFQWxZXQsmNSSUf+SY7OpA9mZX0KNs7HN4W0eQyqhQzjrJrrWrlCEWKaJlURZaDQ8fVrIU2Km99O8/yW3/TurCQDHThXFeFPBrul2SQ6ejQHpv93BN1bAiEVqjnr+FqdEA99mgwIDAQAB",
+                Environment = environment,
+                MerchantId = merchantID,
+                PublicKey = publicKey,
+                PrivateKey = privateKey,
+                ClientPublicKey = clientPublicKey,
                 ServerReturnURL = string.Format("{0}://{1}/store/user/PaymentResult", orchardServices.WorkContext.HttpContext.Request.Url.Scheme, orchardServices.WorkContext.HttpContext.Request.Url.Host)
 
             };
@@ -143,44 +226,106 @@ namespace EXPEDIT.Transactions.Services.Payments
             //Customer customer = customers.FirstItem;
             Customer customer = gateway.Customer.Find(order.PaymentCustomerID);
             string PaymentMethodToken = customer.CreditCards[0].Token;
-            if (order.Products.Where(f => string.IsNullOrWhiteSpace(f.PaymentProviderProductName)).Count() > 0)
-                throw new NotSupportedException("Only Subscription Products and Services Supported"); //TODO: Support once offs
-            order.PaymentPaid = 0;
+            if (order.Products.Where(f => !(string.IsNullOrWhiteSpace(f.PaymentProviderProductName) ^ (f.ProductUnitID.HasValue && f.ProductUnitID != ConstantsHelper.UNIT_SI_UNARY))).Count() > 0)
+                throw new NotSupportedException("Unsupported product type. Either subscription (Scheduled product/service) or unary product supported but not both.");
+            decimal productsCharge = 0m;
+            order.PaymentPaid = 0m;
             order.PaymentReference = "";
             order.PaymentResponse = "";
+            var isAdmin = _orchardServices.Authorizer.Authorize(Orchard.Security.StandardPermissions.SiteOwner); 
             foreach (var p in order.Products)
             {
                 if (!p.ModelUnits.HasValue || p.ModelUnits <= 0)
                     p.ModelUnits = 1m;
                 for (int i = 0; i < p.ModelUnits; i++)
                 {
-                    //TODO Support non-subscriptions
-                    var SubscriptionRequest = new SubscriptionRequest
+                    if (p.ProductUnitID == ConstantsHelper.UNIT_SI_UNARY || !p.ProductUnitID.HasValue)
                     {
-                        PaymentMethodToken = PaymentMethodToken,
-                        PlanId = p.PaymentProviderProductName,
-                        HasTrialPeriod = false,
-                        Price = p.Subtotal / p.ModelUnits
-                    };
-                    Result<Subscription> result = gateway.Subscription.Create(SubscriptionRequest);
+                        if (p.Subtotal.HasValue)
+                            productsCharge += p.Subtotal.Value;
+                    }
+                    else
+                    {
+                        var SubscriptionRequest = new SubscriptionRequest
+                        {
+                            PaymentMethodToken = PaymentMethodToken,
+                            PlanId = p.PaymentProviderProductName,
+                            HasTrialPeriod = false,
+                            Price = (isAdmin) ? 0m : p.Subtotal / p.ModelUnits
+                        };
+                        Result<Subscription> subResult = gateway.Subscription.Create(SubscriptionRequest);
+                        if (subResult.IsSuccess() || isAdmin)
+                        {
+                            order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Subscribed | (uint)PaymentUtils.PaymentStatus.Success;
+                            order.PaymentResponse += string.Format("::{0}", subResult.Target.Status.ToString());
+                            order.PaymentPaid += subResult.Target.Price;
+                            order.PaymentReference += string.Format("::{0}", subResult.Target.Id);
+                            order.PaymentResponseShort += string.Format("::{0}", subResult.Message);
+                            p.Paid = true;
+                        }
+                        else
+                        {
+                            order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Error;
+                            order.PaymentError = (uint)PaymentUtils.PaymentError.BadPayment;
+                            order.PaymentResponse = string.Format("{0},{1}::{2}", subResult.Message, string.Join(", ", subResult.Errors.DeepAll()), order.PaymentResponse);
+                            order.PaymentResponseShort = subResult.Message;
+                            break;
+                        }
+                    }
 
-                    if (result.IsSuccess())
+                }
+            }
+
+            if (productsCharge > 0m)
+            {
+                if (!isAdmin)
+                {
+                    //Do Product (non-sbscription billing)
+                    TransactionRequest request = new TransactionRequest
                     {
-                        order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Subscribed | (uint)PaymentUtils.PaymentStatus.Success;
-                        order.PaymentResponse += string.Format("::{0}", result.Target.Status.ToString());
-                        order.PaymentPaid += result.Target.Price;
-                        order.PaymentReference += string.Format("::{0}", result.Target.Id);
-                        order.PaymentResponseShort += string.Format("::{0}", result.Message);
-                        p.Paid = true;
+                        Amount = productsCharge,
+                        PaymentMethodToken = PaymentMethodToken,
+                        Options = new TransactionOptionsRequest
+                        {
+                            SubmitForSettlement = true
+                        }
+                    };
+
+                    Result<Transaction> txResult = gateway.Transaction.Sale(request);
+
+                    if (txResult.IsSuccess())
+                    {
+                        if (order.PaymentStatus != null)
+                            order.PaymentStatus = order.PaymentStatus | (uint)PaymentUtils.PaymentStatus.Transacted;
+                        else
+                            order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Transacted | (uint)PaymentUtils.PaymentStatus.Success;
+                        order.PaymentResponse += string.Format("::{0}", txResult.Target.Status.ToString());
+                        order.PaymentPaid += txResult.Target.Amount;
+                        order.PaymentReference += string.Format("::{0}", txResult.Target.Id);
+                        order.PaymentResponseShort += string.Format("::{0}", txResult.Message);
+                        foreach (var p in order.Products)
+                            p.Paid = true;
                     }
                     else
                     {
                         order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Error;
                         order.PaymentError = (uint)PaymentUtils.PaymentError.BadPayment;
-                        order.PaymentResponse = string.Format("{0},{1}::{2}", result.Message, string.Join(", ", result.Errors.DeepAll()), order.PaymentResponse);
-                        order.PaymentResponseShort = result.Message;
-                        break;
+                        order.PaymentResponse = string.Format("{0},{1}::{2}", txResult.Message, string.Join(", ", txResult.Errors.DeepAll()), order.PaymentResponse);
+                        order.PaymentResponseShort = txResult.Message;
                     }
+                }
+                else
+                {
+                    if (order.PaymentStatus != null)
+                        order.PaymentStatus = order.PaymentStatus | (uint)PaymentUtils.PaymentStatus.Transacted;
+                    else
+                        order.PaymentStatus = (uint)PaymentUtils.PaymentStatus.Transacted | (uint)PaymentUtils.PaymentStatus.Success;                    
+                    order.PaymentResponse += "::admin";
+                    order.PaymentPaid += 0m;
+                    order.PaymentReference += "::admin";
+                    order.PaymentResponseShort += "::admin";
+                    foreach (var p in order.Products)
+                        p.Paid = true;
                 }
             }
         }

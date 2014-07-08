@@ -19,8 +19,8 @@ namespace EXPEDIT.Transactions.ViewModels
         public string PaymentResponseShort { get; set; }
         public string PaymentQuery { get; set; }
         public string PaymentQueryResponse { get; set; }
-        public uint PaymentStatus { get; set; } //EXPEDIT.Transactions.Services.Payments.PaymentUtils.PaymentStatus
-        public uint PaymentError { get; set; } //EXPEDIT.Transactions.Services.Payments.PaymentUtils.PaymentError
+        public uint? PaymentStatus { get; set; } //EXPEDIT.Transactions.Services.Payments.PaymentUtils.PaymentStatus
+        public uint? PaymentError { get; set; } //EXPEDIT.Transactions.Services.Payments.PaymentUtils.PaymentError
         public string PaymentCustomerID { get; set; }
         public string PaymentFirstname { get; set; }
         public string PaymentLastname { get; set; }

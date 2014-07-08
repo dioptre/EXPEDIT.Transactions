@@ -43,7 +43,7 @@ namespace EXPEDIT.Transactions.Controllers
         [ValidateInput(false)]
         public ActionResult Index()
         {
-            var m = new ProductsViewModel { Products = _transactions.GetProducts() };
+            var m = new ProductsViewModel { Products = _transactions.GetProducts(null,null,null,null, EXPEDIT.Share.Helpers.ConstantsHelper.ProductCategories) };
             return View(m);
         }
 
@@ -123,6 +123,7 @@ namespace EXPEDIT.Transactions.Controllers
             }
         }
 
+        [RequireHttps]
         [Authorize]
         public ActionResult Confirm(string id)
         {
@@ -157,7 +158,7 @@ namespace EXPEDIT.Transactions.Controllers
             {
                 _transactions.UpdateOrderOwner(m);
                 _transactions.MakePayment(ref m);
-                if ((m.PaymentStatus & 1) == 1) //Success
+                if ((m.PaymentStatus & 1) == 1 && m.Products.All(f=>f.Paid)) //Success
                 {
                     _transactions.UpdateOrderPaid(m);
                     m.Downloads = _transactions.GetDownloads(orderID);

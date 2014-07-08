@@ -1,5 +1,6 @@
 ﻿
-@{string formID = "form" + Guid.NewGuid().ToString();}
+@if (Model.Order != null) {
+string formID = "form" + Guid.NewGuid().ToString();
 <div id="myMiniCart@(formID)">
 @using (Html.BeginForm("UpdateCart", "User", new { area = "EXPEDIT.Transactions" }, FormMethod.Post, new { id = formID, @class = "form" }))
 {
@@ -14,11 +15,11 @@ foreach (var p in Model.Order.Products)
     }
     var taxInc = (p.Tax > 0) ?  " (inc. GST)" : "";
     if (checkoutPage) {
-        <p>@Html.Raw(string.Format("{0:f2}x {1} <br/>@ {2}{3:f2}{4}{5}", p.ModelUnits, p.ModelName, p.CurrencyPrefix, p.Subtotal, p.CurrencyPostfix, taxInc))</p>
+        <p>@Html.Raw(string.Format("{0:f2}x {1} {2}s <br/>@ {3}{4:f2}{5}{6}", p.ModelUnits, p.ModelName,  p.ProductUnitName ?? "unit", p.CurrencyPrefix, p.Subtotal, p.CurrencyPostfix, taxInc))</p>
     }
     else {
         <input type="number" id="@p.ModelID" name="@p.ModelID" min="0" max="40" step="1" value="@string.Format("{0:0}", p.ModelUnits)" />
-        <p>@Html.Raw(string.Format("{0} <br/>@ {1}{2:f2}{3}{4}", p.ModelName, p.CurrencyPrefix, p.Subtotal, p.CurrencyPostfix, taxInc))</p>
+        <p>@Html.Raw(string.Format("{0} {1}s <br/>@ {2:f2}{3} {4} {5}", p.ModelName,  p.ProductUnitName ?? "unit", p.CurrencyPrefix, p.Subtotal, p.CurrencyPostfix, taxInc))</p>
     }
 }
     <p>@if (!checkoutPage) {
@@ -89,3 +90,4 @@ foreach (var p in Model.Order.Products)
         });
     });
 </script>
+}

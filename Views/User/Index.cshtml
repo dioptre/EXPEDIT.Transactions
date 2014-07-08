@@ -21,7 +21,7 @@
 <p style="font-size: 17.5px;font-weight: normal;line-height: 1;color: #999;">@p.Subtitle</p>
 <p>@Html.Raw(p.HTML)</p>
 <p><a href="/share/go/@p.UrlInternal">...more information</a></p>
-<p style="text-align: right;">@((p.PricePerModelUnit != null && p.PricePerModelUnit > 0) ? Html.Raw(string.Format("{0} {1:f2} {2} ({3})*",p.CurrencyPrefix,p.PricePerModelUnit,p.CurrencyPostfix, p.ProductUnitName)) : Html.Raw(""))</p>
+<p style="text-align: right;">@((p.PricePerModelUnit != null && p.PricePerModelUnit > 0) ? Html.Raw(string.Format("{0} {1:f2} {2} ({3})*",p.CurrencyPrefix,p.PricePerModelUnit,p.CurrencyPostfix, p.ProductUnitName ?? "Unit")) : Html.Raw(""))</p>
 <p style="text-align: right;">@Html.Raw(p.PricePerModelUnit == 0 && p.FreeDownloadID.HasValue ? 
         string.Format("<button class=\"btn btn-info\" onclick=\"window.location.href='{0}'\">Free Download</button></p>", Url.Action("download", new { area="EXPEDIT.Share", controller="User", id=p.FreeDownloadID, @ref=p.ProductID})  ) 
     :   string.Format("<button class=\"btn btn-info\" onclick=\"window.location.href='{0}'\">Buy</button></p>", Url.Action("Buy",new { area="EXPEDIT.Transactions", controller="User", id=p.SupplierModelID, @ref=p.ProductID}))
