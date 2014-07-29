@@ -1102,7 +1102,7 @@ namespace EXPEDIT.Transactions.Services {
                         twoStep.VerificationCode = Guid.NewGuid().ToString().Substring(0, 4);
                         d.TwoStepAuthenticationDatas.AddObject(twoStep);
                     }
-                    contract.ContractText = contract.ParentContract.ContractText.Replace("{Firstname}", contact.Firstname.Replace("{", "{{").Replace("}", "}}")).Replace("{Surname}", m.Lastname.Replace("{", "{{").Replace("}", "}}")).Replace("{Company}", m.Company.Replace("{", "{{").Replace("}", "}}")).Replace("{Date}", now.ToLongDateString() + " " + now.ToLongTimeString() + " UTC");
+                    contract.ContractText = contract.ParentContract.ContractText.Replace("{Email}", contact.DefaultEmail.Replace("{", "{{").Replace("}", "}}")).Replace("{Mobile}", contact.DefaultMobile.Replace("{", "{{").Replace("}", "}}")).Replace("{Firstname}", contact.Firstname.Replace("{", "{{").Replace("}", "}}")).Replace("{Surname}", m.Lastname.Replace("{", "{{").Replace("}", "}}")).Replace("{Company}", m.Company.Replace("{", "{{").Replace("}", "}}")).Replace("{Date}", now.ToLongDateString() + " " + now.ToLongTimeString() + " UTC");
                     m.TwoStepID = twoStep.TwoStepAuthenticationDataID;
                 }
                 m.ContactID = contact.ContactID;                
