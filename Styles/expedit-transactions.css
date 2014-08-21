@@ -73,3 +73,7 @@ label.valid {
 .ui-tabs-loading {
 
 }
+
+.cart-link {
+    cursor: pointer;
+}

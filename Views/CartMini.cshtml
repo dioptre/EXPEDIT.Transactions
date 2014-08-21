@@ -15,15 +15,15 @@ foreach (var p in Model.Order.Products)
     }
     var taxInc = (p.Tax > 0) ?  " (inc. GST)" : "";
     if (checkoutPage) {
-        <p>@Html.Raw(string.Format("{0:f2}x {1} {2}s <br/>@ {3}{4:f2}{5}{6}", p.ModelUnits, p.ModelName,  p.ProductUnitName ?? "unit", p.CurrencyPrefix, p.Subtotal, p.CurrencyPostfix, taxInc))</p>
+        <p>@Html.Raw(string.Format("{0:f2}x {1} {2}{7} <br/>@ {3}{4:f2}{5}{6}", p.ModelUnits, p.ModelName,  p.ProductUnitName ?? "unit", p.CurrencyPrefix, p.Subtotal, p.CurrencyPostfix, taxInc, p.IsRecurring ? "ly" : "s" ))</p>
     }
     else {
         <input type="number" id="@p.ModelID" name="@p.ModelID" min="0" max="40" step="1" value="@string.Format("{0:0}", p.ModelUnits)" />
-        <p>@Html.Raw(string.Format("{0} {1}s <br/>@ {2:f2}{3} {4} {5}", p.ModelName,  p.ProductUnitName ?? "unit", p.CurrencyPrefix, p.Subtotal, p.CurrencyPostfix, taxInc))</p>
+        <p>@Html.Raw(string.Format("{0} {1}{6} <br/>@ {2}{3:f2} {4} {5}", p.ModelName,  p.ProductUnitName ?? "unit", p.CurrencyPrefix, p.Subtotal, p.CurrencyPostfix, taxInc, p.IsRecurring ? "ly" : "s"))</p>
     }
 }
     <p>@if (!checkoutPage) {
-           @:<a href="@Url.Action("Confirm", "User", new { area = "EXPEDIT.Transactions", id=Model.Order.OrderID } )">Checkout</a>&nbsp;|&nbsp;<a href="javascript:$('#@formID').submit();">Update</a>
+           @:<a href="@Url.Action("Confirm", "User", new { area = "EXPEDIT.Transactions", id=Model.Order.OrderID } )">Checkout</a>&nbsp;|&nbsp;<a class="cart cart-link @formID-btn">Update</a>
         }
         else {@:<a href="@Url.Action("Index", "User", new { area = "EXPEDIT.Transactions"} )">Continue Shopping</a>
         }</p>    
@@ -33,16 +33,20 @@ foreach (var p in Model.Order.Products)
 
 <script type="text/javascript">
     var request;
-    $(document).ready(function () {
+    //$(document).ready(function () {
+        $(".@formID-btn").click(function (e) {
+            $("#@formID").submit();
+        });
         $("#@formID").submit(function (e) {
             // prevent default posting of form
             e.preventDefault();
             e.returnValue = false;
-        }).validate({
+        });
+        $("#@formID").validate({
             rules: {
-                @foreach (var p in Model.Order.Products) {                
+                @foreach (var p in Model.Order.Products) {
                     @:"@p.ModelID": { required: true, positiveNumber: true },
-                }
+                                                }
             },
             submitHandler: function (form) {
                 // abort any pending request
@@ -77,7 +81,7 @@ foreach (var p in Model.Order.Products)
                 request.fail(function (jqXHR, textStatus, errorThrown) {
                     // log the error to the console
                     alertify.error("Please check your inputs and try again.");
-                    //alertify.error("The following error occured: " + textStatus, errorThrown);                    
+                    //alertify.error("The following error occured: " + textStatus, errorThrown);
                 });
 
                 // callback handler that will be called regardless
@@ -88,6 +92,6 @@ foreach (var p in Model.Order.Products)
                 });
             }
         });
-    });
+    //});
 </script>
 }

@@ -31,7 +31,6 @@
     :   string.Format("<button class=\"btn btn-info\" onclick=\"window.location.href='{0}'\">Buy</button></p>", Url.Action("Buy",new { area="EXPEDIT.Transactions", controller="User", id=p.SupplierModelID, @ref=p.ProductID}))
     )
     
-</p>
 <br>
 <p>Last Updated: @p.LastUpdated @((p.UrlExternal != null && p.UrlExternal.Length > 0) ? Html.Raw("| Author: <a href=\"/share/go/" + p.UrlExternal + "\">" + p.Manufacturer + "</a>") : Html.Raw("")) @* | Downloads: @p.Downloads | Rating: @string.Format("{0:f2}", p.Rating)/@string.Format("{0:f2}", p.RatingScale)*@</p>
 </td>

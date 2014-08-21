@@ -223,7 +223,8 @@ namespace EXPEDIT.Transactions.Services {
                                  PaymentProviderProductName= (o.ApplicationPaymentProviderProduct==null) ? null : o.ApplicationPaymentProviderProduct.PaymentProviderProductName,
                                  Subtotal = o.Subtotal,
                                  ProductUnitID = o.ModelUnitID,
-                                 ProductUnitName = o.UnitModel.StandardUnitName
+                                 ProductUnitName = o.UnitModel.StandardUnitName,
+                                 IsRecurring = o.UnitModel.EquivalentUnitID != ConstantsHelper.UNIT_SI_UNARY && o.ModelUnitID != ConstantsHelper.UNIT_SI_UNARY
                              });
                 else
                     items = (from o in d.SupplyItemDetailViews
@@ -244,7 +245,8 @@ namespace EXPEDIT.Transactions.Services {
                                  ModelName = o.StandardModelName,
                                  CurrencyPostfix = o.PostfixCharacters,
                                  CurrencyPrefix = o.PrefixCharacters,
-                                 Tax = o.Tax
+                                 Tax = o.Tax,
+                                 IsRecurring = o.ModelUnitName != null && o.ModelUnitName != "u" && o.ModelUnitID != ConstantsHelper.UNIT_SI_UNARY
                              });
                 var m = new OrderViewModel { OrderID = orderID, Products = items.ToList() };                
                 return m;
