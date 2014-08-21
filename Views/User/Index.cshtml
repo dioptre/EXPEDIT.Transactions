@@ -12,6 +12,10 @@
 <thead>
 <tr><th width="75px"></th><th></th></tr>
 </thead>
+<tfoot>
+    <tr><td colspan="2"><p style="margin-top:20px;text-align:right;"><small>*Excluding local government taxes and charges. May be subject to GST.</small></p></td>
+    </tr>
+</tfoot>
 <tbody>
     @foreach (var p in Model.Products) {
 <tr>
@@ -35,4 +39,3 @@
 }
 </tbody>
 </table>
-<p style="margin-top:20px;text-align:right;"><small>*Excluding local government taxes and charges. May be subject to GST.</small></p>

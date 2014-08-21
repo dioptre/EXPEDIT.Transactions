@@ -211,7 +211,7 @@ namespace EXPEDIT.Transactions.Helpers
             {
                 // Put a logo in the header
                 Image image = section.Headers.Primary.AddImage(logoFileName);
-                image.Height = "2cm";
+                image.Height = "4cm";
                 image.LockAspectRatio = true;
                 image.RelativeVertical = RelativeVertical.Line;
                 image.RelativeHorizontal = RelativeHorizontal.Margin;
