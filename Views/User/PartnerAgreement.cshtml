@@ -10,11 +10,13 @@
 {
 @Html.AntiForgeryToken()
 <fieldset>
-    <legend>Mining Appstore Partnership Agreement</legend>
+    <legend>Mining Appstore Joint Venture Agreement</legend>
+     @if (Model.IsContractValid) {
     <div class="editor-field">
         @Html.Raw(Model.ContractText)
         <br /><br />
     </div>
+    }
     <div class="editor-label">
         <strong>Authorised by:</strong>
     </div>
