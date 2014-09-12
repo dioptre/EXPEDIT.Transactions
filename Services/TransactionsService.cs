@@ -1104,14 +1104,17 @@ namespace EXPEDIT.Transactions.Services {
                         twoStep.VerificationCode = Guid.NewGuid().ToString().Substring(0, 4);
                         d.TwoStepAuthenticationDatas.AddObject(twoStep);
                     }
-                    contract.ContractText = contract.ParentContract.ContractText.Replace("{Email}", contact.DefaultEmail.Replace("{", "{{").Replace("}", "}}")).Replace("{Mobile}", contact.DefaultMobile.Replace("{", "{{").Replace("}", "}}")).Replace("{Firstname}", contact.Firstname.Replace("{", "{{").Replace("}", "}}")).Replace("{Surname}", m.Lastname.Replace("{", "{{").Replace("}", "}}")).Replace("{Company}", m.Company.Replace("{", "{{").Replace("}", "}}")).Replace("{Date}", now.ToLongDateString() + " " + now.ToLongTimeString() + " UTC");
+                    contract.ContractText = contract.ParentContract.ContractText.Replace("{Email}", contact.DefaultEmail.Replace("{", "{{").Replace("}", "}}")).Replace("{Mobile}", contact.DefaultMobile).Replace("{Firstname}", contact.Firstname.Replace("{", "{{").Replace("}", "}}")).Replace("{Surname}", m.Lastname.Replace("{", "{{").Replace("}", "}}")).Replace("{Company}", m.Company.Replace("{", "{{").Replace("}", "}}")).Replace("{Date}", now.ToLongDateString() + " " + now.ToLongTimeString() + " UTC");
                     m.TwoStepID = twoStep.TwoStepAuthenticationDataID;
                 }
-                m.ContactID = contact.ContactID;                
-                m.Lastname = contact.Surname;
-                m.Firstname = contact.Firstname;
+                m.ContactID = contact.ContactID;       
+                if (m.Lastname != contact.Surname && !string.IsNullOrWhiteSpace(contact.Surname))
+                    m.Lastname = contact.Surname;
+                if (m.Firstname != contact.Firstname && !string.IsNullOrWhiteSpace(contact.Firstname))
+                    m.Firstname = contact.Firstname;
                 m.ContractID = contract.ContractID;
-                m.Mobile = contact.DefaultMobile;
+                if (m.Mobile != contact.DefaultMobile && !string.IsNullOrWhiteSpace(contact.DefaultMobile))
+                    m.Mobile = contact.DefaultMobile;
                 contract.Comment = JsonConvert.SerializeObject(m);        
                 d.SaveChanges();
                 m.ContractText = contract.ContractText;
