@@ -110,6 +110,25 @@ namespace EXPEDIT.Transactions.Services {
             _payment.PreparePayment(ref order);
         }
 
+        public void AddLicense()
+        {
+
+        }
+
+        public void CloseLicense()
+        {
+
+        }
+
+        public void UpdateSubscription()
+        {
+            //get existing licenses
+            //for experiences where not in licenses = new licenses
+            //pay partial or re-use existing credit in supportExpiry
+            //update price for subscription (total licenses)
+
+        }
+
         public void PreparePaymentResult(ref OrderViewModel order)
         {
             var orderID = string.Format("{0}", order.OrderID.Value);
@@ -619,7 +638,7 @@ namespace EXPEDIT.Transactions.Services {
                                         ValidForDuration = 1, //supplyItem.QuantityModel,
                                         ValidFrom = now,
                                         Expiry = nextMaintenance,
-                                        SupportExpiry = nextMaintenance,
+                                        //SupportExpiry = nextMaintenance,
                                         ApplicationID = application,
                                         ServiceAuthorisationMethod = ConstantsHelper.LICENSE_SERVER_AUTH_METHOD,
                                         VersionUpdated = now
@@ -751,6 +770,325 @@ namespace EXPEDIT.Transactions.Services {
 
                 d.SaveChanges();
             }
+        }
+
+
+        public void ConsolidateSubscriptions(OrderViewModel order)
+        {
+            var isAdmin = _orchardServices.Authorizer.Authorize(Orchard.Security.StandardPermissions.SiteOwner);
+            var application = _users.ApplicationID;
+            var customerID = order.PaymentCustomerID;
+            var contact = _users.ContactID;
+            var warnings = new List<string>();
+            var now = DateTime.UtcNow;
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                //Update customer id
+                var d = new NKDC(_users.ApplicationConnectionString, null);
+                //var transaction = d.BeginTransaction(System.Data.IsolationLevel.ReadCommitted); //TODO implement transactions
+                PurchaseOrder po = (from o in d.PurchaseOrders where order.OrderID.HasValue && o.PurchaseOrderID == order.OrderID select o).Single();
+                Supply s = (from o in d.Supplies where o.CustomerPurchaseOrderID == po.PurchaseOrderID select o).Single();
+                var oldItems = (from o in d.SupplyItems.Include("UnitModel") where o.Supply.CustomerPurchaseOrderID == po.PurchaseOrderID select o).ToList();
+                if (oldItems.Count != oldItems.Where(f=>f.ModelID == oldItems.First().ModelID).Count())
+                {
+                    _users.WarnAdmins(new string[] {"Model could not be consolidated"});
+                    return;
+                }
+                var renewingLicensesCount =  (from o in d.Licenses join a in d.LicenseAssets on o.LicenseID equals a.LicenseID
+                                                  where a.ModelID == oldItems.First().ModelID && o.ContactID == contact 
+                                                  && o.SupportExpiry == null select o.LicenseID).Count();
+                //if (oldItems.First().QuantityModel <= 0)
+                    
+
+
+                var i = new Invoice
+                {
+                    InvoiceID = lh.GuidHelper.NewComb(),
+                    CurrencyID = oldItems.Any() ? oldItems.First().CurrencyID : default(Guid?),
+                    CustomerContactID = contact,
+                    CustomerAddressID = order.PaymentAddressID,
+                    Dated = now,
+                    SupplyID = s.SupplyID,
+                    CustomerReferenceNumber = order.PaymentCustomerID
+                };
+                d.Invoices.AddObject(i);
+                var ppProducts = order.Products.Where(f => f.PaymentProviderProductID != null).Select(f => f.PaymentProviderProductID.Value).ToArray();
+                var currentConditions = new List<ContractConditionViewModel>();
+                var processedSupplyItems = new List<SupplyItem>();
+                var sequence = 0;
+                foreach (var p in order.Products)
+                {
+                    //SupplierModel, Model, Part, Count
+                    var items = (from o in oldItems
+                                 where
+                                     o.SupplierModelID == p.SupplierModelID
+                                     && o.SupplierPartID == p.SupplierPartID
+                                     && o.ModelID == p.ModelID
+                                     && o.PartID == p.PartID
+                                 select o);
+                    if (p.CurrencyID != null && p.CurrencyID != i.CurrencyID)
+                        warnings.Add(string.Format("Disparity in product currencies, order: ({0}) basket product ({1})", order.OrderID, JsonConvert.SerializeObject(p)));
+                    if (!items.Any())
+                        warnings.Add(string.Format("Badly processed order ({0}) missing basket product ({1})", order.OrderID, JsonConvert.SerializeObject(p)));
+                    else
+                    {
+                        //Could group tegether supplyitems but not doing it
+                        //items.Sum(f => f.QuantityLabour + f.QuantityModel + f.QuantityPart);
+
+                        foreach (var supplyItem in items)
+                        {
+
+                            processedSupplyItems.Add(supplyItem);
+                            if (i.CurrencyID != supplyItem.CurrencyID)
+                                warnings.Add(string.Format("Disparity in product currencies, order: ({0}) basket product ({1})", order.OrderID, JsonConvert.SerializeObject(p)));
+
+                            if (supplyItem.SupplierPartID.HasValue && supplyItem.QuantityPart > 0m)
+                            {
+                                InvoiceLine lineItem = new InvoiceLine
+                                {
+                                    InvoiceLineID = Guid.NewGuid(),
+                                    InvoiceID = i.InvoiceID,
+                                    CurrencyID = supplyItem.CurrencyID,
+                                    SupplyItemID = supplyItem.SupplyItemID,
+                                    ReferenceType = d.GetTableName(typeof(SupplierPart)),
+                                    ReferenceID = supplyItem.SupplierPartID,
+                                    Description = (from o in d.SupplierParts where o.SupplierPartID == supplyItem.SupplierPartID select o.Part.StandardPartName).FirstOrDefault(),
+                                    Quantity = supplyItem.QuantityPart,
+                                    Tax = (supplyItem.TaxPart ?? 0m), //TODO: If taxation gets complicated use itemtax table
+                                    OriginalSubtotal = (supplyItem.CostPart ?? 0m),
+                                    Subtotal = (supplyItem.SubtotalPart ?? 0m), //TODO: Discounts
+                                    Sequence = sequence
+                                };
+                                i.InvoiceLine.Add(lineItem);
+                                sequence++;
+
+                                //TODO: if we add part as an asset, it should go in assetdata table
+                                //TODO: if we add part, should add as license to licenseasset
+                            }
+
+                            if (supplyItem.QuantityLabour > 0m)
+                            {
+                                InvoiceLine lineItem = new InvoiceLine
+                                {
+                                    InvoiceLineID = Guid.NewGuid(),
+                                    InvoiceID = i.InvoiceID,
+                                    CurrencyID = supplyItem.CurrencyID,
+                                    SupplyItemID = supplyItem.SupplyItemID,
+                                    ReferenceType = ConstantsHelper.REFERENCE_TYPE_LABOUR,
+                                    //ReferenceID = TODO
+                                    Description = "Labour",
+                                    Quantity = supplyItem.QuantityLabour,
+                                    Tax = (supplyItem.TaxLabour ?? 0m), //TODO: If taxation gets complicated use itemtax table
+                                    OriginalSubtotal = (supplyItem.CostLabour ?? 0m),
+                                    Subtotal = (supplyItem.SubtotalLabour ?? 0m) //TODO: Discounts
+                                };
+                                i.InvoiceLine.Add(lineItem);
+
+                            }
+
+                            if (supplyItem.SupplierModelID.HasValue && supplyItem.QuantityModel > 0m)
+                            {
+                                var mu = supplyItem.UnitModel;
+                                var muString = (mu != null) ? string.Format(" - [{0}]", mu.StandardUnitName).ToUpper() : "";
+                                var mn = (from o in d.SupplierModels where o.SupplierModelID == supplyItem.SupplierModelID select o.Model.StandardModelName).FirstOrDefault();
+                                InvoiceLine lineItem = new InvoiceLine
+                                {
+                                    InvoiceLineID = Guid.NewGuid(),
+                                    InvoiceID = i.InvoiceID,
+                                    CurrencyID = supplyItem.CurrencyID,
+                                    SupplyItemID = supplyItem.SupplyItemID,
+                                    ReferenceType = d.GetTableName(typeof(SupplierModel)),
+                                    ReferenceID = supplyItem.SupplierModelID,
+                                    Description = string.Format("{0}{1}",
+                                        mn,
+                                        muString
+                                        ),
+                                    Quantity = supplyItem.QuantityModel,
+                                    Tax = (supplyItem.TaxModel ?? 0m), //TODO: If taxation gets complicated use itemtax table
+                                    OriginalSubtotal = (supplyItem.CostModel ?? 0m),
+                                    Subtotal = (supplyItem.SubtotalModel ?? 0m) //TODO: Discounts
+                                };
+                                i.InvoiceLine.Add(lineItem);
+                                var qtyLicenses = 1;
+                                if (supplyItem.QuantityModel < 500)
+                                    qtyLicenses = Convert.ToInt32(supplyItem.QuantityModel.Value);
+                                for (int j = 0; j < qtyLicenses; j++)
+                                {
+                                    //Asset TODO:Check to update old asset
+                                    var assetID = Guid.NewGuid();
+                                    var asset = new Asset
+                                    {
+                                        AssetID = assetID,
+                                        AssetName = string.Format("{0} [{1}]", string.Join(null, mn.Take(60 - 42)), assetID),
+                                        InitialCost = lineItem.Subtotal,
+                                        ProRataCost = supplyItem.CostPerUnitModel + supplyItem.TaxModel,
+                                        ProRataUnitID = supplyItem.ModelUnitID,
+                                        Purchased = now,
+                                        PurchaseOrderID = order.OrderID,
+                                        ModelID = supplyItem.ModelID,
+                                        CurrentContactID = contact
+                                    };
+                                    d.Assets.AddObject(asset);
+                                    DateTime? nextMaintenance = default(DateTime?);
+                                    if (mu != null)
+                                    {
+                                        if (mu.UnitID == ConstantsHelper.UNIT_SI_SECONDS)
+                                            nextMaintenance = now.AddSeconds(1.0); //supplyItem.QuantityModel.Value
+                                        else if (mu.EquivalentUnitID == ConstantsHelper.UNIT_SI_SECONDS)
+                                            nextMaintenance = now.AddSeconds(Convert.ToDouble(1m * mu.EquivalentMultiplier));
+                                        else
+                                            warnings.Add(string.Format("Product unit description not time based. Could not update maintenance schedule. Order: ({0}) Asset: ({1})", order.OrderID, asset.AssetID));
+                                    }
+                                    var assetMaintenance = new AssetMaintenance
+                                    {
+                                        AssetMaintenanceID = Guid.NewGuid(),
+                                        AssetID = asset.AssetID,
+                                        NextDueDateBilling = nextMaintenance
+                                    };
+                                    asset.AssetMaintenance.Add(assetMaintenance);
+                                    var license = new License
+                                    {
+                                        LicenseID = Guid.NewGuid(),
+                                        LicenseeGUID = contact,
+                                        LicenseeUsername = _users.Username,
+                                        ContactID = contact,
+                                        ValidForUnitID = supplyItem.ModelUnitID,
+                                        ValidForDuration = 1, //supplyItem.QuantityModel,
+                                        ValidFrom = now,
+                                        Expiry = nextMaintenance,
+                                        //SupportExpiry = nextMaintenance,
+                                        ApplicationID = application,
+                                        ServiceAuthorisationMethod = ConstantsHelper.LICENSE_SERVER_AUTH_METHOD,
+                                        VersionUpdated = now
+                                    };
+                                    d.Licenses.AddObject(license);
+                                    var licenseAsset = new LicenseAsset
+                                    {
+                                        LicenseAssetID = Guid.NewGuid(),
+                                        LicenseID = license.LicenseID,
+                                        AssetID = asset.AssetID,
+                                        ModelID = supplyItem.ModelID
+                                    };
+                                    d.LicenseAssets.AddObject(licenseAsset);
+
+
+                                    var m = (from o in d.DictionaryModels where o.ModelID == supplyItem.ModelID select o).FirstOrDefault();
+                                    if (m != null)
+                                    {
+                                        if (m.UserGuideFileDataID.HasValue)
+                                            d.Downloads.AddObject(new Download
+                                            {
+                                                DownloadID = Guid.NewGuid(),
+                                                FileAllocated = now,
+                                                FilterContactID = contact,
+                                                RemainingDownloads = ConstantsHelper.DOWNLOADS_REMAINING_DEFAULT,
+                                                FileDataID = m.UserGuideFileDataID.Value,
+                                                LicenseID = license.LicenseID,
+                                                LicenseAssetID = licenseAsset.LicenseAssetID,
+                                                ValidFrom = now,
+                                                ValidUntil = nextMaintenance
+                                            });
+                                        if (m.SecureFileDataID.HasValue)
+                                            d.Downloads.AddObject(new Download
+                                            {
+                                                DownloadID = Guid.NewGuid(),
+                                                FileAllocated = now,
+                                                FilterContactID = contact,
+                                                RemainingDownloads = ConstantsHelper.DOWNLOADS_REMAINING_DEFAULT,
+                                                FileDataID = m.SecureFileDataID.Value,
+                                                LicenseID = license.LicenseID,
+                                                LicenseAssetID = licenseAsset.LicenseAssetID,
+                                                ValidFrom = now,
+                                                ValidUntil = nextMaintenance
+                                            });
+                                    }
+                                }
+
+                            }
+                        }
+
+                    }
+
+
+
+                }
+                //warning if anything left over
+                var leftOvers = (from o in oldItems where !(from processed in processedSupplyItems select processed.SupplyItemID).Contains(o.SupplyItemID) select o);
+                foreach (var oldItem in leftOvers)
+                    warnings.Add(string.Format("Badly processed order ({0}), spurious basket product: ({1})", order.OrderID, JsonConvert.SerializeObject(oldItem)));
+
+
+                //invoice
+                i.TaxAmount = i.InvoiceLine.Sum(f => f.Tax);
+                i.OriginalTotal = i.InvoiceLine.Sum(f => f.OriginalSubtotal);
+                i.Total = i.InvoiceLine.Sum(f => f.Subtotal); //Todo: Discounts
+
+                //supply
+                s.CustomerApprovedBy = contact;
+                s.IsSupplied = true;
+                s.IsPaid = true; //started payment, finalised=cancelled
+
+                //PurchaseOrder
+                //TODO: update orderstatus
+
+                //payment
+                var pay = new Payment
+                {
+                    PaymentID = Guid.NewGuid(),
+                    ExternalReferenceName = order.PaymentReference,
+                    CustomerContactID = contact,
+                    OriginalAmount = i.Total,
+                    CurrencyID = i.CurrencyID,
+                    Amount = order.PaymentPaid,
+                    Paid = now,
+                    VersionUpdated = now
+                };
+                d.Payments.AddObject(pay);
+                //paymentInvoice
+                var payInvoice = new PaymentInvoice
+                {
+                    PaymentID = pay.PaymentID,
+                    InvoiceID = i.InvoiceID,
+                    VersionUpdated = now
+                };
+                pay.PaymentInvoice.Add(payInvoice);
+                //Check invoice amt vs order.PaymentPaid!
+                if (i.Total != pay.Amount)
+                {
+                    warnings.Add(string.Format("Discrepancy in payment, order: ({0}). Total:{1} & Paid:{2}", order.OrderID, i.Total, pay.Amount));
+                }
+                if (pay.Amount >= i.Total || isAdmin)
+                {
+                    payInvoice.IsFinalPaymentInvoice = true;
+                }
+                else
+                {
+                    //Remove downloads issued
+                    var downloads = d.ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Added).Where(f => f.Entity.GetType() == typeof(Download)).Select(f => (Download)f.Entity);
+                    foreach (var o in downloads)
+                        d.Downloads.DeleteObject(o);
+                    //Remove licenses issued
+                    var licenseAssetss = d.ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Added).Where(f => f.Entity.GetType() == typeof(LicenseAsset)).Select(f => (LicenseAsset)f.Entity);
+                    foreach (var o in licenseAssetss)
+                        d.LicenseAssets.DeleteObject(o);
+                    var licenses = d.ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Added).Where(f => f.Entity.GetType() == typeof(License)).Select(f => (License)f.Entity);
+                    foreach (var o in licenses)
+                        d.Licenses.DeleteObject(o);
+                    //Remove assets
+                    var assets = d.ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Added).Where(f => f.Entity.GetType() == typeof(Asset)).Select(f => (Asset)f.Entity);
+                    foreach (var o in assets)
+                        d.Assets.DeleteObject(o);
+                    var assetMaintenances = d.ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Added).Where(f => f.Entity.GetType() == typeof(AssetMaintenance)).Select(f => (AssetMaintenance)f.Entity);
+                    foreach (var o in assetMaintenances)
+                        d.AssetMaintenances.DeleteObject(o);
+                }
+
+                if (warnings.Count > 0)
+                    _users.WarnAdmins(warnings);
+
+                d.SaveChanges();
+            }
+
         }
 
         public void UpdateOrder(OrderViewModel order)
@@ -1910,7 +2248,7 @@ namespace EXPEDIT.Transactions.Services {
                                             while (license.Expiry < DateTime.UtcNow)
                                             {
                                                 license.Expiry = license.Expiry.Value.AddSeconds(Convert.ToDouble(multiplier));
-                                                license.SupportExpiry = license.Expiry;
+                                                //license.SupportExpiry = license.Expiry;
                                             }                                            
                                         }
                                         toReturn = true;

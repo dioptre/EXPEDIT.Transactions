@@ -216,6 +216,33 @@ namespace EXPEDIT.Transactions.Services.Payments
 
         }
 
+        public bool UpdateSubscription(string paymentCustomerID, string productName, string[] subscriptions, decimal? price)
+        {
+            if (gateway == null)
+                throw new NotSupportedException("Require a web context to make payment");
+            //Customer customer = gateway.Customer.Find(paymentCustomerID);
+            //string PaymentMethodToken = customer.CreditCards[0].Token;           
+            var isAdmin = _orchardServices.Authorizer.Authorize(Orchard.Security.StandardPermissions.SiteOwner);
+            //if (isAdmin)
+            //    return true;
+            foreach (var subscriptionID in subscriptions)
+            {
+                Subscription sub = gateway.Subscription.Find(subscriptionID);
+                if (sub.PlanId == productName)
+                {
+                    var result = gateway.Subscription.Update(sub.Id,
+                        new SubscriptionRequest
+                        {
+                            Price = price                          
+                        });
+                    if (result.IsSuccess())
+                        return true;
+                }
+            }
+            return false;
+
+        }
+
         public void MakePayment(ref OrderViewModel order)
         {
             if (gateway == null)
