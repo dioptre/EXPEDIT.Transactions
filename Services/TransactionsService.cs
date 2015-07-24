@@ -110,24 +110,7 @@ namespace EXPEDIT.Transactions.Services {
             _payment.PreparePayment(ref order);
         }
 
-        public void AddLicense()
-        {
-
-        }
-
-        public void CloseLicense()
-        {
-
-        }
-
-        public void UpdateSubscription()
-        {
-            //get existing licenses
-            //for experiences where not in licenses = new licenses
-            //pay partial or re-use existing credit in supportExpiry
-            //update price for subscription (total licenses)
-
-        }
+     
 
         public void PreparePaymentResult(ref OrderViewModel order)
         {
@@ -773,19 +756,77 @@ namespace EXPEDIT.Transactions.Services {
         }
 
 
-        public void ConsolidateSubscriptions(OrderViewModel order)
+        public void ConsolidateSubscriptions(OrderViewModel order, Guid modelID)
         {
+            
+            //first check all licenses are the same type
+            if (!order.Products.All(f => f.ModelID == modelID))
+                throw new Exception("Can't consolidate order with multiple subscription types.");
+            if (!order.Products.All(f => f.ModelUnits == 1m && f.RecipientID.HasValue))
+                throw new Exception("Can't consolidate order without delegating a single recipient.");
+
+
             var isAdmin = _orchardServices.Authorizer.Authorize(Orchard.Security.StandardPermissions.SiteOwner);
             var application = _users.ApplicationID;
             var customerID = order.PaymentCustomerID;
             var contact = _users.ContactID;
             var warnings = new List<string>();
             var now = DateTime.UtcNow;
+            var nextMonth = new DateTime(now.Year, now.Month, 1).AddMonths(1);
             using (new TransactionScope(TransactionScopeOption.Suppress))
             {
                 //Update customer id
                 var d = new NKDC(_users.ApplicationConnectionString, null);
                 //var transaction = d.BeginTransaction(System.Data.IsolationLevel.ReadCommitted); //TODO implement transactions
+                //get existing licenses (all, and subset of terminating)
+                var oldLicenses = (from o in d.Licenses.Where(f => f.ContactID == contact && f.Version == 0 && f.VersionDeletedBy == null)
+                                   join a in d.LicenseAssets on o.LicenseID equals a.LicenseID
+                                   where a.ModelID == modelID
+                                   select o).ToArray();
+                var expiringLicenses = (from o in oldLicenses where o.SupportExpiry != null && o.SupportExpiry < nextMonth && o.SupportExpiry > now select o).ToArray();
+                Guid? myLicense;
+                myLicense = (from o in oldLicenses where o.SupportExpiry == null && o.Expiry > now && o.LicenseeGUID == contact
+                             orderby o.ValidFrom, o.VersionUpdated ascending select o.LicenseID).FirstOrDefault();
+
+                var redundantLicenses = (from o in oldLicenses where o.LicenseeGUID == contact && o.LicenseID != myLicense 
+                                         orderby o.ValidFrom, o.VersionUpdated ascending select o).ToArray();
+                if (!myLicense.HasValue)
+                {
+                    //Take the first redundant license
+                    var lic = redundantLicenses.FirstOrDefault();
+                    if (lic != null)
+                    {
+                        myLicense = lic.LicenseID;
+                        if (lic.SupportExpiry.HasValue)
+                        {
+                            (from o in d.Licenses where o.LicenseID == myLicense && o.Version == 0 select o)
+                                .Update(f => new License { SupportExpiry = null });
+                            redundantLicenses = redundantLicenses.Skip(1).ToArray();
+                        }
+                    }
+                }
+                if (!myLicense.HasValue)
+                {
+                    //Need to add self to the order
+                    var myProduct = new OrderProductViewModel
+                    {
+                        ModelID = modelID,
+                        ModelUnits = 1m,
+                        RecipientID = contact
+                    };
+                    order.Products = order.Products.Concat(new OrderProductViewModel[] { myProduct });
+                }
+
+                //for experiences where not in licenses = new licenses
+                var mySubs = (from o in d.Companies.Where(f=>f.PrimaryContactID == contact && f.Version == 0 && f.VersionDeletedBy == null)
+                                       join e in 
+                                       d.Experiences.Where(f=>f.Version == 0 && f.VersionDeletedBy == null && (f.Expiry >= nextMonth || !f.Expiry.HasValue) && (f.DateFinished >= nextMonth || !f.DateFinished.HasValue)) 
+                                   on o.CompanyID equals e.CompanyID select e.ContactID);
+
+                //pay partial or re-use existing credit in supportExpiry
+                //update price for subscription (total licenses)
+
+
                 PurchaseOrder po = (from o in d.PurchaseOrders where order.OrderID.HasValue && o.PurchaseOrderID == order.OrderID select o).Single();
                 Supply s = (from o in d.Supplies where o.CustomerPurchaseOrderID == po.PurchaseOrderID select o).Single();
                 var oldItems = (from o in d.SupplyItems.Include("UnitModel") where o.Supply.CustomerPurchaseOrderID == po.PurchaseOrderID select o).ToList();

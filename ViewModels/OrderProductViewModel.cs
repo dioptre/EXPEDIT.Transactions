@@ -28,6 +28,8 @@ namespace EXPEDIT.Transactions.ViewModels
         public string CostText { get { return string.Format("{0} {1:f2} {2}", CurrencyPrefix, Cost, CurrencyPostfix); } }
         public bool Paid { get; set; }
 
+        public Guid? RecipientID { get; set; }
+
         public OrderProductViewModel() : base()
         { }
 
